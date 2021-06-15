@@ -20,14 +20,16 @@ int main() {
 	int i, j;
 	int next = 0;
 	for (;;) {
-		next = *timer + 1000000;
 		UART_DATA = '1';
+		next = *timer + 10000000;
 		while (*timer-next<0)
 			*led_ptr = 1;	
 
 
 		UART_DATA = '0';
-		*led_ptr = 0;
+		next = *timer + 10000000;
+		while (*timer-next<0)
+			*led_ptr = 0;
 
 	}
 }
