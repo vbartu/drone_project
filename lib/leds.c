@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <machine/patmos.h>
 #include <machine/spm.h>
 
@@ -30,10 +29,7 @@ void led_toggle(int led)
 	if (led < 0 || led >= LED_COUNT) {
 		return;
 	}
-	int test = LED_REG;
-	int new_test = test ^ 1 << led;
-	printf("Toggle: 0x%04x, 0x%04x\n", test, new_test);
-	LED_REG = new_test;
+	LED_REG ^= 1 << led;
 }
 
 void led_on_all(void)
