@@ -5,7 +5,7 @@
 #include "lib/leds.h"
 
 static int seconds_counter;
-static bool print_flag;
+static volatile bool print_flag;
 
 static void fast_leds_cb(void);
 static void slow_leds_cb(void);
@@ -38,6 +38,8 @@ static void print_flag_cb(void)
 
 int main(void)
 {
+	printf("Leds with timers example\n");
+
 	timer_init();
 	led_off_all();
 
