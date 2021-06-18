@@ -21,7 +21,4 @@ app_timer_t* create_timer(timer_cb_t timer_cb, uint32_t time_ms, uint32_t period
 void delete_timer(app_timer_t* timer);
 
 
-
-
 #endif // __TIMER_H
-

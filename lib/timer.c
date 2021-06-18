@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <machine/exceptions.h>
 #include <machine/rtc.h>
+#include <pthread_mutex.h>
 
 #include "timer.h"
 
@@ -13,6 +14,7 @@
 #define TIMER_LIST_SIZE 15
 
 static app_timer_t timer_list[TIMER_LIST_SIZE];
+static pthread_mutex_t timer_list_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 static void us_interrupt_cb(void) __attribute__((naked));
 static void set_next_timer(void);
@@ -83,8 +85,10 @@ void timer_init(void)
 
 app_timer_t* create_timer(timer_cb_t timer_cb, uint32_t time_ms, uint32_t period_ms)
 {
-	uint64_t current_time = micros();
 	app_timer_t* result_timer = NULL;
+
+	pthread_mutex_lock(&timer_list_mtx);
+	uint64_t current_time = micros();
 
 	for (int i = 0; i < TIMER_LIST_SIZE; i++) {
 		if (timer_list[i].timer_cb == NULL) {
@@ -97,14 +101,17 @@ app_timer_t* create_timer(timer_cb_t timer_cb, uint32_t time_ms, uint32_t period
 			break;
 		}
 	}
+	pthread_mutex_unlock(&timer_list_mtx);
 
 	return result_timer;
 }
 
 void delete_timer(app_timer_t* timer)
 {
+	pthread_mutex_lock(&timer_list_mtx);
 	if (timer_list[timer->id].timer_cb != NULL) {
 		timer_list[timer->id].timer_cb = NULL;
 		set_next_timer();
 	}
+	pthread_mutex_unlock(&timer_list_mtx);
 }
