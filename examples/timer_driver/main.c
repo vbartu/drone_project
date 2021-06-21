@@ -3,7 +3,7 @@
 
 #include "lib/timer.h"
 
-int counter = 0;
+static int counter;
 
 
 static void timer_callback(void);
@@ -17,15 +17,18 @@ static void timer_callback(void)
 
 int main(void)
 {
+	printf("Timer driver example\n");
+
 	timer_init();
 	app_timer_t* timer = create_timer(timer_callback, 500, 1000);
-	printf("App timer address: 0x%08x\n", (int) timer);
 
-	while (1) {
-		uint32_t time = (uint32_t) (micros()/1000);
-		printf("Time passed: %d, %lu\n", counter, time);
-		for (int i = 0; i < 50000000; i++);
+	while (counter < 20) {
+		printf("Time passed: %d\n", counter);
+		delay(500);
 	}
+
+	printf("\n");
+	printf("End!\n");
 
 	return 0;
 }
