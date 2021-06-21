@@ -26,11 +26,6 @@ static void us_interrupt_cb(void)
 	exc_epilogue();
 }
 
-uint64_t micros(void)
-{
-	return (uint64_t) get_cpu_usecs();
-}
-
 static void set_next_timer(void)
 {
 	int earliest_index = -1;
@@ -81,7 +76,8 @@ void timer_init(void)
 	intr_enable();
 }
 
-app_timer_t* create_timer(timer_cb_t timer_cb, uint32_t time_ms, uint32_t period_ms)
+app_timer_t* create_timer(timer_cb_t timer_cb, uint32_t time_ms,
+		uint32_t period_ms)
 {
 	app_timer_t* result_timer = NULL;
 	uint64_t current_time = micros();
@@ -106,4 +102,15 @@ void delete_timer(app_timer_t* timer)
 		timer_list[timer->id].timer_cb = NULL;
 		set_next_timer();
 	}
+}
+
+uint64_t micros(void)
+{
+	return (uint64_t) get_cpu_usecs();
+}
+
+void delay(uint32_t time_ms)
+{
+	uint64_t time_us = micros() + time_ms * 1000;
+	while (micros() < time_us);
 }
