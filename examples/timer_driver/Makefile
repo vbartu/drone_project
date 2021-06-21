@@ -4,4 +4,4 @@ LDFLAGS?= \
 		  -Xgold --defsym -Xgold __heap_end=0x070000
 
 all:
-	patmos-clang -I ../.. -O2 $(LDFLAGS) main.c timer.c -o main.elf -lm
+	patmos-clang -I ../.. -O2 $(LDFLAGS) main.c ../../lib/timer.c -o main.elf -lm -I ../..

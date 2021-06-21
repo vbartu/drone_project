@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "timer.h"
+#include "lib/timer.h"
 
 int counter = 0;
 
