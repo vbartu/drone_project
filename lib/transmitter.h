@@ -8,10 +8,10 @@
 #define RECEIVER ( ( volatile _IODEV unsigned * ) PATMOS_IO_ACT )
 
 typedef struct transmitter {
-	__int32_t channel_throttle;
-	__int32_t channel_roll;
-	__int32_t channel_pitch;
-	__int32_t channel_yaw;
+	__int32_t throttle;
+	__int32_t roll;
+	__int32_t pitch;
+	__int32_t yaw;
 	__int32_t channel_5;
 	__int32_t channel_6;
 } transmitter;

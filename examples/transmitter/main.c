@@ -38,10 +38,10 @@ static void* thread2_main(void* attr)
 		if (print_flag) {
 			print_flag = false;
 			transmitter transmitter = get_transmitter_values();
-			printf("\n Channel-throttle\t:%d", transmitter.channel_throttle);
-			printf("\n Channel-roll\t\t:%d", transmitter.channel_roll);
-			printf("\n Channel-pitch\t\t:%d", transmitter.channel_pitch);
-			printf("\n Channel-yaw\t\t:%d", transmitter.channel_yaw);
+			printf("\n throttle\t:%d", transmitter.throttle);
+			printf("\n roll\t\t:%d", transmitter.roll);
+			printf("\n pitch\t\t:%d", transmitter.pitch);
+			printf("\n yaw\t\t:%d", transmitter.yaw);
 			printf("\n Channel-5\t\t:%d", transmitter.channel_5);
 			printf("\n Channel-6\t\t:%d", transmitter.channel_6);
 		}
