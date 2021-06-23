@@ -11,6 +11,8 @@
 #define SETUP_MEASUREMENTS 300
 
 /** Static variables -------------------------------------------------------- */
+static bool init;
+static pthread_mutex_t init_mtx = PTHREAD_MUTEX_INITIALIZER;
 static double gyro_x_err;
 static double gyro_y_err;
 static double gyro_z_err;
@@ -31,10 +33,10 @@ static pthread_mutex_t gyro_mtx = PTHREAD_MUTEX_INITIALIZER;
 /** Public functions -------------------------------------------------------- */
 void angles_init(void)
 {
-	//pthread_mutex_lock(&print_mtx);
+	pthread_mutex_lock(&print_mtx);
 	printf("Calibrating MPU\n");
-	//pthread_mutex_unlock(&print_mtx);
-	//
+	pthread_mutex_unlock(&print_mtx);
+
 	mpu6050_init();
 	delay(50);
 
@@ -69,12 +71,16 @@ void angles_init(void)
 	accel_z_err = accel_z / (double) SETUP_MEASUREMENTS;
 
 
-	//pthread_mutex_lock(&print_mtx);
+	pthread_mutex_lock(&print_mtx);
 	printf("Gyro err: %.2f, %.2f, %.2f\n", gyro_y_err, gyro_x_err, gyro_z_err);
 	printf("Accel err: %.2f, %.2f, %.2f\n", accel_x_err, accel_y_err,
 			accel_z_err);
-	//pthread_mutex_unlock(&print_mtx);
+	pthread_mutex_unlock(&print_mtx);
 	last_time = micros();
+
+	pthread_mutex_lock(&init_mtx);
+	init = true;
+	pthread_mutex_unlock(&init_mtx);
 }
 
 void calculate_angles_gyro(void)
@@ -121,4 +127,13 @@ angles_t get_angles_gyro(void)
 angles_t get_angles_accel(void)
 {
 	return (angles_t) {x_angle_accel, y_angle_accel, z_angle_accel};
+}
+
+bool angles_is_init(void)
+{
+	bool is_init;
+	pthread_mutex_lock(&init_mtx);
+	is_init = init;
+	pthread_mutex_unlock(&init_mtx);
+	return is_init;
 }

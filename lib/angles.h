@@ -1,6 +1,8 @@
 #ifndef __ANGLES_H
 #define __ANGLES_H
 
+#include <stdbool.h>
+
 #include "sensors/mpu6050.h"
 
 
@@ -18,5 +20,7 @@ void calculate_angles_accel(void);
 
 angles_t get_angles_gyro(void);
 angles_t get_angles_accel(void);
+
+bool angles_is_init(void);
 
 #endif // __ANGLES_H
