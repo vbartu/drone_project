@@ -3,16 +3,8 @@
 
 typedef struct pid_instance_t* pid_ints_t;
 
-typedef struct pid_parameters_t {
-	int k_proportional;
-	int k_integral;
-	int k_derivative;
-	int k_response;
-	int k_filter;
-} pid_parameters_t;
-
-
-void pid_create(pid_ints_t pid, pid_parameters_t config);
+void pid_create(pid_ints_t pid, double kp, double ki, double kd, double kr,
+		double kf);
 
 double pid_fire(pid_ints_t pid, double input, double feedback);
 

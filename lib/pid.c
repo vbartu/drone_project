@@ -1,15 +1,17 @@
+#include <stdio.h>
 #include <stdint.h>
 #include <malloc.h>
 
 #include "pid.h"
 #include "timer.h"
+#include "main.h"
 
 struct pid_instance_t {
-	int Kp;
-	int Ki;
-	int Kd;
-	int Kr;
-	int Kf;
+	double Kp;
+	double Ki;
+	double Kd;
+	double Kr;
+	double Kf;
 	double Ki_accum;
 	double Kd_last;
 	double Kr_accum;
@@ -18,43 +20,50 @@ struct pid_instance_t {
 };
 
 
-void pid_create(pid_ints_t pid, pid_parameters_t config)
+void pid_create(pid_ints_t pid, double kp, double ki, double kd, double kr,
+		double kf)
 {
-	struct pid_instance_t instance = {
-		config.k_proportional,
-		config.k_integral,
-		config.k_derivative,
-		config.k_response,
-		config.k_filter,
-		0.0,
-		(double) micros(),
-		0.0,
-		(double) micros(),
-		micros()
-	};
-	pid = (pid_ints_t) &instance;
+	pid->Kp = kp;
+	pid->Ki = ki;
+	pid->Kd = kd;
+	pid->Kr = kr;
+	pid->Kf = kf;
+	pid->Ki_accum = 0.0;
+	pid->Kd_last = 0.0;
+	pid->Kr_accum = 0.0;
+	pid->Kf_last = 0.0;
+	pid->last_time = micros();
 }
 
 double pid_fire(pid_ints_t pid, double input, double feedback)
 {
 	uint64_t current_time = micros();
-	uint64_t elapsed_time = (current_time - pid->last_time) / 1000000.0;
+	double elapsed_time = (current_time - pid->last_time) / 1000000.0;
 	pid->last_time = current_time;
 
-	double filtered_fb = pid->Kf * (pid->Kf_last - feedback) / elapsed_time;
-	pid->Kf_last = feedback;
+	//double filtered_fb = pid->Kf * (pid->Kf_last - feedback) / elapsed_time;
+	//pid->Kf_last = feedback;
 
-	double error = filtered_fb + input;
+	//double error = filtered_fb + input;
 
-	pid->Ki_accum += error*elapsed_time;
-	double pid_out = (pid->Kp * error
-			        + pid->Ki * pid->Ki_accum
-					+ pid->Kd * (pid->Kd_last - error) / elapsed_time);
-	pid->Kd_last = error;
+	//pid->Ki_accum += error*elapsed_time;
+	//double pid_out = (pid->Kp * error
+	//		        + pid->Ki * pid->Ki_accum
+	//				+ pid->Kd * (pid->Kd_last - error) / elapsed_time);
+	//pid->Kd_last = error;
 
 
-	pid->Kr_accum += pid_out * elapsed_time;
-	double output = pid->Kr * pid->Kr_accum;
+	//pid->Kr_accum += pid_out * elapsed_time;
+	//double output = pid->Kr * pid->Kr_accum;
+
+	//return output;
+	double error = input + feedback;
+
+	double output = pid->Kp * error;
+
+	pthread_mutex_lock(&print_mtx);
+	printf("Error %.2f -- %.2f -- %.2f\n", error, output, pid->Kp);
+	pthread_mutex_unlock(&print_mtx);
 
 	return output;
 }
