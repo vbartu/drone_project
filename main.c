@@ -6,6 +6,13 @@
 /** Static variables -------------------------------------------------------- */
 pthread_mutex_t print_mtx = PTHREAD_MUTEX_INITIALIZER;
 
+
+
+static void* mock_thread(void* args)
+{
+	while (1);
+}
+
 /** Main function ----------------------------------------------------------- */
 int main(void)
 {
