@@ -27,17 +27,10 @@ void* thread_2_main(void* args)
 	pthread_mutex_lock(&print_mtx);
 	printf("Thread 2\n");
 	pthread_mutex_unlock(&print_mtx);
-	pid_parameters_t pid_parameters = {
-		1,
-		1,
-		1,
-		0,
-		0,
-	};
-	pid_create(pitch_pid, pid_parameters);
-	pid_create(roll_pid, pid_parameters);
-	pid_create(yaw_pid, pid_parameters);
 
+	pid_create(pitch_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(roll_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(yaw_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
 
 	while (1) {
 			angles_t gy = get_angles_gyro();
