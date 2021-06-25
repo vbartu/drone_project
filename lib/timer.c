@@ -3,6 +3,7 @@
 #include <machine/rtc.h>
 
 #include "timer.h"
+#include "util.h"
 
 #define __PATMOS_TIMER_BASE       0xF0020000
 #define __PATMOS_TIMER_HICLK      (__PATMOS_TIMER_BASE + 0x00)
@@ -12,7 +13,7 @@
 
 #define TIMER_LIST_SIZE 15
 
-static app_timer_t timer_list[TIMER_LIST_SIZE];
+static app_timer_t timer_list[4][TIMER_LIST_SIZE];
 
 static void us_interrupt_cb(void) __attribute__((naked));
 static void set_next_timer(void);
@@ -28,18 +29,19 @@ static void us_interrupt_cb(void)
 
 static void set_next_timer(void)
 {
+	int core_id = get_core_id();
 	int earliest_index = -1;
 	int64_t earliest_time = 0;
 
 	for (int i = 0; i < TIMER_LIST_SIZE; i++) {
-		if (timer_list[i].timer_cb != NULL) {
+		if (timer_list[core_id][i].timer_cb != NULL) {
 			if (earliest_index == -1) {
 				earliest_index = i;
-				earliest_time = timer_list[i].time;
+				earliest_time = timer_list[core_id][i].time;
 			} else if (earliest_time <= 0
-					&& timer_list[i].time < timer_list[earliest_index].time) {
+					&& timer_list[core_id][i].time < timer_list[core_id][earliest_index].time) {
 				earliest_index = i;
-				earliest_time = timer_list[i].time;
+				earliest_time = timer_list[core_id][i].time;
 			}
 		}
 	}
@@ -51,15 +53,16 @@ static void set_next_timer(void)
 
 static void execute_timer(void)
 {
+	int core_id = get_core_id();
 	uint64_t current_time = micros();
 	for (int i = 0; i < TIMER_LIST_SIZE; i++) {
-		if (timer_list[i].timer_cb != NULL) {
-			if (timer_list[i].time <= current_time) {
-				timer_list[i].timer_cb();
-				if (timer_list[i].period) {
-					timer_list[i].time += timer_list[i].period*1000;
+		if (timer_list[core_id][i].timer_cb != NULL) {
+			if (timer_list[core_id][i].time <= current_time) {
+				timer_list[core_id][i].timer_cb();
+				if (timer_list[core_id][i].period) {
+					timer_list[core_id][i].time += timer_list[core_id][i].period*1000;
 				} else {
-					timer_list[i].timer_cb = NULL;
+					timer_list[core_id][i].timer_cb = NULL;
 				}
 			}
 		}
@@ -79,16 +82,17 @@ void timer_init(void)
 app_timer_t* create_timer(timer_cb_t timer_cb, uint32_t time_ms,
 		uint32_t period_ms)
 {
+	int core_id = get_core_id();
 	app_timer_t* result_timer = NULL;
 	uint64_t current_time = micros();
 
 	for (int i = 0; i < TIMER_LIST_SIZE; i++) {
-		if (timer_list[i].timer_cb == NULL) {
-			timer_list[i].id = i;
-			timer_list[i].timer_cb = timer_cb;
-			timer_list[i].time = current_time + time_ms*1000;
-			timer_list[i].period = period_ms;
-			result_timer = &(timer_list[i]);
+		if (timer_list[core_id][i].timer_cb == NULL) {
+			timer_list[core_id][i].id = i;
+			timer_list[core_id][i].timer_cb = timer_cb;
+			timer_list[core_id][i].time = current_time + time_ms*1000;
+			timer_list[core_id][i].period = period_ms;
+			result_timer = &(timer_list[core_id][i]);
 			set_next_timer();
 			break;
 		}
@@ -98,8 +102,9 @@ app_timer_t* create_timer(timer_cb_t timer_cb, uint32_t time_ms,
 
 void delete_timer(app_timer_t* timer)
 {
-	if (timer_list[timer->id].timer_cb != NULL) {
-		timer_list[timer->id].timer_cb = NULL;
+	int core_id = get_core_id();
+	if (timer_list[core_id][timer->id].timer_cb != NULL) {
+		timer_list[core_id][timer->id].timer_cb = NULL;
 		set_next_timer();
 	}
 }
