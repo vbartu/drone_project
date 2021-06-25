@@ -13,16 +13,16 @@ void* thread_3_main(void* args)
 	pthread_mutex_unlock(&print_mtx);
 
 	while (1) {
-		if (uart_data_ready()) {
-			uint8_t c = uart_read();
 
+		unsigned char c;
+		int result = uart2_read(&c);
+
+		if (result) {
 			pthread_mutex_lock(&print_mtx);
-			printf("Data readed: %c, %d\n", (char) c, (int) c);
+			printf("DATA (%d): %c, %d\n", result, c, c);
 			pthread_mutex_unlock(&print_mtx);
 		}
-		pthread_mutex_lock(&print_mtx);
-		printf("hola\n");
-		pthread_mutex_unlock(&print_mtx);
+
 		delay(1000);
 	}
 
