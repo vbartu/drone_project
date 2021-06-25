@@ -28,6 +28,8 @@ void* thread_2_main(void* args)
 	printf("Thread 2\n");
 	pthread_mutex_unlock(&print_mtx);
 
+	while (!angles_is_init());
+
 	pid_create(pitch_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
 	pid_create(roll_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
 	pid_create(yaw_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
@@ -42,6 +44,6 @@ void* thread_2_main(void* args)
 			pthread_mutex_lock(&print_mtx);
 			printf("PID: %.2f, %.2f, %.2f\n", pitch_out, roll_out, yaw_out);
 			pthread_mutex_unlock(&print_mtx);
-			delay(500);
+			delay(1500);
 	}
 }
