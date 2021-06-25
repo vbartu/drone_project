@@ -59,10 +59,12 @@ double pid_fire(pid_ints_t pid, double input, double feedback)
 	//return output;
 	double error = input + feedback;
 
-	double output = pid->Kp * error;
+	//double output = pid->Kp * error;
+	double kp = pid-> Kp;
+	double output = error * kp;
 
 	pthread_mutex_lock(&print_mtx);
-	printf("Error %.2f -- %.2f -- %.2f\n", error, output, pid->Kp);
+	printf("Error %.2f -- %.2f -- %f\n", error, output, pid->Kp);
 	pthread_mutex_unlock(&print_mtx);
 
 	return output;
