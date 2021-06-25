@@ -28,12 +28,19 @@ double pid_fire(pid_ints_t pid, double input, double feedback)
 	double elapsed_time = (current_time - pid.last_time) / 1000000.0;
 	pid.last_time = current_time;
 
-	double error = input-feedback;
-	pid.Ki_accum += error*elapsed_time;
-	double pid_out = (pid.Kp * error
-			        + pid.Ki * pid.Ki_accum
-					+ pid.Kd * (error - pid.Kd_last) / elapsed_time);
+
+	double Cf = pid.Kd * (feedback - pid.Kf_last) / elapsed_time);
+	double error = input-(feedback*Cf);
+
+	double Ci = pid.Ki * pid.Ki_accum;
+	double Cd = pid.Kd * (error - pid.Kd_last) / elapsed_time);
+	double C = (pid.Kp * error + Ci + Cd);
+
+	double pid_out = (pid.Kp * error + Ci + Cd);
+
+	pid.Ki_accum += error * elapsed_time;
 	pid.Kd_last = error;
+	pid.Kf_last = feedback;
 
 	return pid_out;
 }
