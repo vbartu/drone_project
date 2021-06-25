@@ -24,25 +24,25 @@ volatile _SPM int* m = (volatile _SPM int*) PATMOS_IO_ACT+0x10;
 #define m4 3
 
 static int counter;
-static int i;
+static int i, j = 1;
 
+
+//This function increases the pwm output from 1 to 2000, then drops back to 1. All 4 motors receive the same value.
 static void actuator(void)
 {
+		pthread_mutex_lock(&counter_mtx);
+		counter=j;
+		pthread_mutex_unlock(&counter_mtx);
+		j = j+100;
+		if (j >= 2000) j = 0;
+		*(MOTOR + m1) = j;
+		*(MOTOR + m2) = j;
+		*(MOTOR + m3) = j;
+		*(MOTOR + m4) = j;
+		
 
-
-		* MOTOR = 1000;
-		*(MOTOR + 1) = 1000;
-		*(MOTOR + 2) = 1000;
-		*(MOTOR + 3) = 1000;
-	i = 2000000;
-	while(i>0)
-		i--;
-/*
-	*n = 1000;
-	*(m+1) = 1000;	
-	*(m+2) = 1000;
-	*(m+3) = 1000;*/
 }
+
 
 
 static void* thread1_main(void *args)
@@ -58,27 +58,26 @@ static void* thread2_main(void *args)
 
 static void* thread3_main(void *args)
 {
-	while(1){
-	//	actuator();
-		pthread_mutex_lock(&counter_mtx);
-		counter++;
-		pthread_mutex_unlock(&counter_mtx);
-
+	while(1)
+	{
+		actuator();
 	}
 }
 
-int main() {
-	pthread_t thread1, thread2, thread3;
-	pthread_create(&thread1, NULL, thread3_main, NULL);
-	pthread_create(&thread2, NULL, thread2_main, NULL);
-	pthread_create(&thread3, NULL, thread1_main, NULL);
-//	actuator();
-	while(1){
-		* led_ptr = 0xff;
+int main() 
+{
+	pthread_t thread1, thread2;
+	pthread_create(&thread1, NULL, thread1_main, NULL);
+	pthread_create(&thread2, NULL, thread3_main, NULL);	//Only the 3rd thread can control the motors. The 1st is the main function itself.
 
+	
+	
+	while(1)
+	{
 		pthread_mutex_lock(&counter_mtx);
 		printf("\nCounter:%d",counter);
-		pthread_mutex_unlock(&counter_mtx);
+		pthread_mutex_unlock(&counter_mtx);	
+		
 	}		
 	return 0;
 }

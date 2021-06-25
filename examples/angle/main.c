@@ -31,19 +31,19 @@ static void* thread1_main(void* attr)
 	timer_init();
 
 	app_timer_t* print_timer = create_timer(print_flag_cb, 500, 1000);
-	app_timer_t* read_timer = create_timer(read_flag_cb, 100, 5);
+	app_timer_t* read_timer = create_timer(read_flag_cb, 100, 200);
 
 	while (true) {
 
 		if (print_flag) {
 			print_flag = false;
-			angles_t angles = get_angles();
+			angles_t angles = get_angles2();
 			printf("Pitch: %.2f, Roll: %.2f, Yaw: %.2f\n", angles.pitch,
 					angles.roll, angles.yaw);
 		}
 
 		if (read_flag) {
-			calculate_angles();
+			calculate_angles2();
 		}
 	}
 
