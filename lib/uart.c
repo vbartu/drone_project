@@ -2,20 +2,33 @@
 
 #include "uart.h"
 
-#define TRANSMIT_READY_MASK 0x00000001U
-#define DATA_AVAILABLE_MASK 0x00000002U
-#define UART2_CTRL_REGISTER *(int*) (PATMOS_IO_UART2)
-#define UART2_DATA_REGISTER *(int*) (PATMOS_IO_UART2 + 4)
-#define UART3_CTRL_REGISTER *(int*) (PATMOS_IO_UART3)
-#define UART3_DATA_REGISTER *(int*) (PATMOS_IO_UART3 + 4)
+#define UART2 ((volatile _IODEV unsigned *)PATMOS_IO_UART2)
 
 
-bool uart_data_ready(void)
+int uart2_write(unsigned char data)
 {
-	return UART2_CTRL_REGISTER & DATA_AVAILABLE_MASK;
+    if ((*UART2 & 0x00000001) != 0)
+    {
+        *UART2 = (unsigned int)data;
+        return 1;
+    }
+    else
+    {
+        data = 0;
+        return 0;
+    }
 }
 
-uint8_t uart_read(void)
+int uart2_read(unsigned char *data)
 {
-	return UART2_DATA_REGISTER;
+    if ((*UART2 & 0x00000002) != 0)
+    {
+        *data = (unsigned char)(*(UART2 + 1) & 0x000000FF);
+        return 1;
+    }
+    else
+    {
+        *data = 0;
+        return 0;
+    }
 }

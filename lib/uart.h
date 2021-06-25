@@ -1,10 +1,8 @@
 #ifndef __UART_H
 #define __UART_H
 
-#include <stdint.h>
-#include <stdbool.h>
+int uart2_write(unsigned char data);
 
-bool uart_data_ready(void);
-uint8_t uart_read(void);
+int uart2_read(unsigned char *data);
 
 #endif // __UART_H
