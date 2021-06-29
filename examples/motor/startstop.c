@@ -24,9 +24,61 @@ volatile _SPM int* m = (volatile _SPM int*) PATMOS_IO_ACT+0x10;
 
 static int counter;
 static int i=0,j=1,k=0;
-static bool startmotor = false, stopmotor = false, final = false;
+static bool startmotor = false, stopmotor = false, final = false, m1_cal = false, m2_cal = false, m3_cal = false, m4_cal = false, calibrated = false;
 
+/*static void motor_calibration(void)
+{	
 
+	pthread_mutex_lock(&counter_mtx);
+	counter = j;  
+	printf("\nMotor is calibrating %d", j);  
+	pthread_mutex_unlock(&counter_mtx);
+	
+	
+	i = 40000;
+	while(i>0 && !m1_cal)
+	{
+		j = j + 100;
+		if (j >= 2000) j = 1;
+		*(MOTOR + m1) = j;
+	}
+	m1_cal = true;
+	*(MOTOR + m1) = 0;
+	
+	i = 40000;
+	while(i>0 && !m2_cal)
+	{
+		j = j + 100;
+		if (j >= 2000) j = 1;
+		*(MOTOR + m2) = j;
+	}
+	m2_cal = true;
+	*(MOTOR + m2) = 0;
+	
+	i = 40000;
+	while(i>0 && !m3_cal) 
+	{
+		j = j + 100;
+		if (j >= 2000) j = 1;
+		*(MOTOR + m3) = j;
+	}
+	m3_cal = true;
+	*(MOTOR + m3) = 0;
+	
+	i = 40000;
+	while(i>0 && !m4_cal)
+	{
+		j = j + 100;
+		if (j >= 2000) j = 1;
+		*(MOTOR + m4) = j;
+	}
+	m4_cal = true;
+	*(MOTOR + m4) = 0;
+	
+	if (m1_cal && m2_cal && m3_cal && m4_cal) calibrated = true;
+
+}
+*/
 
 static void actuator_start(void)
 {
@@ -44,23 +96,22 @@ static void actuator_start(void)
 }
 
 
-
-static void actuator_run(void)
+static void motor_start(int number)
 {
-  pthread_mutex_lock(&counter_mtx);
-  counter = j;
-  if (j == 2000) j = 0;
-  if (!stopmotor)
-  {
-    *(MOTOR + 0) = j;
-    *(MOTOR + 1) = j;
-    *(MOTOR + 2) = j;
-    *(MOTOR + 3) = j;
-  }
-  printf("\nMotor is running %d", j);
-  
-  pthread_mutex_unlock(&counter_mtx);
+	pthread_mutex_lock(&counter_mtx);
+	counter = j;  
+	printf("\nMotor is starting %d", j);  
+	pthread_mutex_unlock(&counter_mtx);
+
+	j = j + 100;
+	if (j >= 2000) j = 1;
+	*(MOTOR + number) = j;
+	*(MOTOR + number) = j;
+	*(MOTOR + number) = j;
+	*(MOTOR + number) = j;
 }
+
+
 
 static void actuator_stop(void)
 {
@@ -88,8 +139,8 @@ static void* thread1_main(void *args)
 
 
 static void* thread2_main(void *args)
-{
-
+{	
+	
 	while(1){
 	
 		transmitter_read(); 		

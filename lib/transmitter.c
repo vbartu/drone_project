@@ -68,7 +68,7 @@ int convert_receiver_channel(unsigned int channel, bool reverse)
 void transmitter_read() {
   // read the receiver pwm duty cycle
 
-  int throttle_tmp 	= convert_receiver_channel(0, false);
+  int throttle_tmp 	= convert_receiver_channel(0, true);
   int roll_tmp	 	= convert_receiver_channel(1, true);
   int pitch_tmp 	= convert_receiver_channel(2, false);
   int yaw_tmp 		= convert_receiver_channel(3, true);
