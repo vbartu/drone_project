@@ -7,7 +7,7 @@
 #include "main.h"
 #include "lib/timer.h"
 
-#define SETUP_MEASUREMENTS 300.0
+#define SETUP_MEASUREMENTS 500
 
 
 /** Data structures --------------------------------------------------------- */
@@ -22,18 +22,18 @@ static bool init;
 static pthread_mutex_t init_mtx = PTHREAD_MUTEX_INITIALIZER;
 static angles_axis_t gyro_err;
 static angles_axis_t accel_err;
-static angles_axis_t gyro;
-static angles_axis_t accel;
+//static angles_axis_t gyro;
+//static angles_axis_t accel;
 static angles_t position;
 static uint64_t last_time;
 static pthread_mutex_t position_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 /** Function prototypes ----------------------------------------------------- */
-static void calculate_angles_gyro(void);
-static void calculate_angles_accel(void);
+//static void calculate_angles_gyro(void);
+//static void calculate_angles_accel(void);
 
 /** Function definitions ---------------------------------------------------- */
-static void calculate_angles_gyro(void)
+static angles_axis_t calculate_angles_gyro(void)
 {
 	mpu6050_gyro_t gyro_data = mpu6050_gyro_read();
 	double x_dps = gyro_data.x / 32.8 - gyro_err.x;
@@ -44,20 +44,24 @@ static void calculate_angles_gyro(void)
 	double elapsed_time = (current_time - last_time) / 1000000.0;
 	last_time = current_time;
 
+	angles_axis_t gyro;
 	gyro.x = x_dps * elapsed_time;
 	gyro.y = y_dps * elapsed_time;
 	gyro.z = z_dps * elapsed_time;
+	return gyro;
 }
 
-static void calculate_angles_accel(void)
+static angles_axis_t calculate_angles_accel(void)
 {
 	mpu6050_accel_t accel_data = mpu6050_accel_read();
 	double x = accel_data.x;
 	double y = accel_data.y;
 	double z = accel_data.z;
-	accel.x = (atan(x / (sqrt(pow(y, 2) + pow(z, 2)))) - accel_err.x)*180/M_PI;
+	angles_axis_t accel;
+	accel.x = -(atan(x / (sqrt(pow(y, 2) + pow(z, 2)))) - accel_err.x)*180/M_PI;
 	accel.y = (atan(y / (sqrt(pow(x, 2) + pow(z, 2)))) - accel_err.y)*180/M_PI;
 	accel.z = (atan(z / (sqrt(pow(y, 2) + pow(x, 2)))) - accel_err.z)*180/M_PI;
+	return accel;
 }
 
 /** Public functions -------------------------------------------------------- */
@@ -68,14 +72,14 @@ void angles_init(void)
 	pthread_mutex_unlock(&print_mtx);
 
 	mpu6050_init();
-	delay(20);
+	delay(202);
 
-	int16_t gyro_x = 0;
-	int16_t gyro_y = 0;
-	int16_t gyro_z = 0;
-	int16_t accel_x = 0;
-	int16_t accel_y = 0;
-	int16_t accel_z = 0;
+	int32_t gyro_x = 0;
+	int32_t gyro_y = 0;
+	int32_t gyro_z = 0;
+	int32_t accel_x = 0;
+	int32_t accel_y = 0;
+	int32_t accel_z = 0;
 
 	for (int i = 0; i < SETUP_MEASUREMENTS; i++) {
 		mpu6050_gyro_t gyro_data = mpu6050_gyro_read();
@@ -91,13 +95,13 @@ void angles_init(void)
 		delay(10);
 	}
 
-	gyro_err.x = gyro_x / 32.8 / SETUP_MEASUREMENTS;
-	gyro_err.y = gyro_y / 32.8 / SETUP_MEASUREMENTS;
-	gyro_err.z = gyro_z / 32.8 / SETUP_MEASUREMENTS;
+	gyro_err.x = gyro_x / 32.8 / (double) SETUP_MEASUREMENTS;
+	gyro_err.y = gyro_y / 32.8 / (double) SETUP_MEASUREMENTS;
+	gyro_err.z = gyro_z / 32.8 / (double) SETUP_MEASUREMENTS;
 
-	double x = accel_x / SETUP_MEASUREMENTS;
-	double y = accel_y / SETUP_MEASUREMENTS;
-	double z = accel_z / SETUP_MEASUREMENTS;
+	double x = accel_x / (double) SETUP_MEASUREMENTS;
+	double y = accel_y / (double) SETUP_MEASUREMENTS;
+	double z = accel_z / (double) SETUP_MEASUREMENTS;
 	accel_err.x = atan(x / (sqrt(pow(y, 2) + pow(z, 2))));
 	accel_err.y = atan(y / (sqrt(pow(x, 2) + pow(z, 2))));
 	accel_err.z = atan(z / (sqrt(pow(y, 2) + pow(x, 2))));
@@ -115,8 +119,8 @@ void angles_init(void)
 }
 
 void calculate_angles(void) {
-	calculate_angles_gyro();
-	calculate_angles_accel();
+	angles_axis_t gyro = calculate_angles_gyro();
+	angles_axis_t accel = calculate_angles_accel();
 
 	pthread_mutex_lock(&position_mtx);
 	position.pitch = 0.95*(position.pitch + gyro.y) + 0.05*accel.x;
