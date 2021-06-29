@@ -15,11 +15,9 @@ typedef struct angles_t {
 
 void angles_init(void);
 
-void calculate_angles_gyro(void);
-void calculate_angles_accel(void);
+void calculate_angles(void);
 
-angles_t get_angles_gyro(void);
-angles_t get_angles_accel(void);
+angles_t get_angles(void);
 
 bool angles_is_init(void);
 
