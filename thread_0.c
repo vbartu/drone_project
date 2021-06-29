@@ -5,7 +5,7 @@
 #include "lib/timer.h"
 
 /** Static variables -------------------------------------------------------- */
-static bool print_flag;
+static volatile bool print_flag;
 
 /** Function prototypes ----------------------------------------------------- */
 static void print_flag_cb(void);
@@ -25,7 +25,7 @@ void* thread_0_main(void* args)
 
 	timer_init();
 
-	app_timer_t* print_timer = create_timer(print_flag_cb, 500, 15000);
+	app_timer_t* print_timer = create_timer(print_flag_cb, 500, 60000);
 
 	while (1) {
 		if (print_flag) {
