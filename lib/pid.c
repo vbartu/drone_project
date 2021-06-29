@@ -31,12 +31,13 @@ double pid_fire(pid_instance_t pid, double input, double feedback)
 
 	//double Cf = pid.Kd * (feedback - pid.Kf_last) / elapsed_time);
 	//double error = input-(feedback*Cf);
+	double error = input - feedback;
 
 
 	pid.Ki_accum += error * elapsed_time;
 
 	double Ci = pid.Ki * pid.Ki_accum;
-	double Cd = pid.Kd * (error - pid.Kd_last) / elapsed_time);
+	double Cd = pid.Kd * (error - pid.Kd_last) / elapsed_time;
 
 	double pid_out = (pid.Kp * error + Ci + Cd);
 
