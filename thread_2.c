@@ -7,10 +7,10 @@
 #include "lib/pid.h"
 
 /** Static variables -------------------------------------------------------- */
-static pid_ints_t pitch_pid;
-static pid_ints_t roll_pid;
-static pid_ints_t yaw_pid;
-static volatile bool print_flag;
+static pid_instance_t pitch_pid;
+static pid_instance_t roll_pid;
+static pid_instance_t yaw_pid;
+static bool print_flag;
 
 /** Function prototypes ----------------------------------------------------- */
 static void print_flag_cb(void);
@@ -34,9 +34,9 @@ void* thread_2_main(void* args)
 
 	while (!angles_is_init());
 
-	pid_create(pitch_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
-	pid_create(roll_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
-	pid_create(yaw_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(&pitch_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(&roll_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(&yaw_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
 
 	while (1) {
 		if (print_flag) {
@@ -48,6 +48,7 @@ void* thread_2_main(void* args)
 			double yaw_out = pid_fire(yaw_pid, 0, angles.yaw);
 
 			pthread_mutex_lock(&print_mtx);
+			printf("Angles: %.2f, %.2f, %.2f\n", angles.pitch, angles.roll, angles.yaw);
 			printf("PID: %.2f, %.2f, %.2f\n", pitch_out, roll_out, yaw_out);
 			pthread_mutex_unlock(&print_mtx);
 			delay(1500);
