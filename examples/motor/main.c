@@ -34,7 +34,7 @@ static void actuator(void)
 		counter=j;
 		pthread_mutex_unlock(&counter_mtx);
 		j = j+100;
-		if (j >= 2000) j = 0;
+		if (j >= 2000) j = 1;
 		*(MOTOR + m1) = j;
 		*(MOTOR + m2) = j;
 		*(MOTOR + m3) = j;
@@ -53,11 +53,6 @@ static void* thread1_main(void *args)
 
 static void* thread2_main(void *args)
 {
-	while(1);
-}
-
-static void* thread3_main(void *args)
-{
 	while(1)
 	{
 		actuator();
@@ -68,7 +63,7 @@ int main()
 {
 	pthread_t thread1, thread2;
 	pthread_create(&thread1, NULL, thread1_main, NULL);
-	pthread_create(&thread2, NULL, thread3_main, NULL);	//Only the 3rd thread can control the motors. The 1st is the main function itself.
+	pthread_create(&thread2, NULL, thread2_main, NULL);	//Only the 3rd thread can control the motors. The 1st is the main function itself.
 
 	
 	
