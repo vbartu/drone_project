@@ -29,16 +29,17 @@ double pid_fire(pid_instance_t pid, double input, double feedback)
 	pid.last_time = current_time;
 
 
-	double Cf = pid.Kd * (feedback - pid.Kf_last) / elapsed_time);
-	double error = input-(feedback*Cf);
+	//double Cf = pid.Kd * (feedback - pid.Kf_last) / elapsed_time);
+	//double error = input-(feedback*Cf);
+
+
+	pid.Ki_accum += error * elapsed_time;
 
 	double Ci = pid.Ki * pid.Ki_accum;
 	double Cd = pid.Kd * (error - pid.Kd_last) / elapsed_time);
-	double C = (pid.Kp * error + Ci + Cd);
 
 	double pid_out = (pid.Kp * error + Ci + Cd);
 
-	pid.Ki_accum += error * elapsed_time;
 	pid.Kd_last = error;
 	pid.Kf_last = feedback;
 
