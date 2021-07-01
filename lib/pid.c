@@ -10,15 +10,15 @@
 void pid_create(pid_instance_t* pid, double kp, double ki, double kd, double kr,
 		double kf)
 {
-	pid->Kp = kp;
-	pid->Ki = ki;
-	pid->Kd = kd;
-	pid->Kr = kr;
-	pid->Kf = kf;
-	pid->Ki_accum = 0.0;
-	pid->Kd_last = 0.0;
-	pid->Kr_accum = 0.0;
-	pid->Kf_last = 0.0;
+	pid->kp = kp;
+	pid->ki = ki;
+	pid->kd = kd;
+	pid->kr = kr;
+	pid->kf = kf;
+	pid->ki_accum = 0.0;
+	pid->kd_last = 0.0;
+	pid->kr_accum = 0.0;
+	pid->kf_last = 0.0;
 	pid->last_time = micros();
 }
 
@@ -29,20 +29,29 @@ double pid_fire(pid_instance_t pid, double input, double feedback)
 	pid.last_time = current_time;
 
 
-	//double Cf = pid.Kd * (feedback - pid.Kf_last) / elapsed_time);
-	//double error = input-(feedback*Cf);
-	double error = input - feedback;
+	double error;
+	if (pid.kf != 0) {
+		double cf = pid.kf * (feedback - pid.kf_last) / elapsed_time;
+		error = input - feedback * cf;
+	} else {
+		 error = input - feedback;
+	}
+
+	pid.kf_last = feedback;
 
 
-	pid.Ki_accum += error * elapsed_time;
+	pid.ki_accum += error * elapsed_time;
+	double ci = pid.ki * pid.ki_accum;
+	double cd = pid.kd * (error - pid.kd_last) / elapsed_time;
+	pid.kd_last = error;
 
-	double Ci = pid.Ki * pid.Ki_accum;
-	double Cd = pid.Kd * (error - pid.Kd_last) / elapsed_time;
+	double pid_out = (pid.kp * error + ci + cd);
 
-	double pid_out = (pid.Kp * error + Ci + Cd);
-
-	pid.Kd_last = error;
-	pid.Kf_last = feedback;
+	if (pid.kr != 0) {
+		pid.kr_accum += pid_out * elapsed_time;
+		double cr = pid.kr * pid.kr_accum;
+		pid_out = cr;
+	}
 
 	return pid_out;
 }
