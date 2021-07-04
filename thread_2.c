@@ -8,7 +8,9 @@
 #include "lib/transmitter.h"
 #include "lib/motor.h"
 
-#define CHANGE 0.5
+#define CHANGE 0.2
+#define BASE_THROTTLE 1600
+#define THROTTLE_SCALE 10
 
 /** Static variables -------------------------------------------------------- */
 static pid_instance_t pitch_pid;
@@ -41,13 +43,14 @@ void* thread_2_main(void* args)
 
 	while (!angles_is_init());
 
-	pid_create(&pitch_pid, 2.0, 0.0, 2.0, 0.0, 0.0);
-	pid_create(&roll_pid, 2.0, 0.0, 2.0, 0.0, 0.0);
+	pid_create(&pitch_pid, 0.0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(&roll_pid, 0.0, 0.0, 0.0, 0.0, 0.0);
 	//pid_create(&yaw_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
 
 	while (true) {
 		if (controller_flag) {
 			controller_flag = false;
+			double motor_0=0, motor_1 = 0, motor_2 = 0, motor_3 = 0;
 			angles_t angles = get_angles();
 
 			double pitch_out = pid_fire(pitch_pid, 0, angles.pitch);
@@ -57,10 +60,12 @@ void* thread_2_main(void* args)
 			transmitter_read();
 			transmitter tm = get_transmitter_values();
 
-			double motor_0 = tm.throttle - pitch_out - roll_out;
-			double motor_1 = tm.throttle + pitch_out - roll_out;
-			double motor_2 = tm.throttle + pitch_out + roll_out;
-			double motor_3 = tm.throttle - pitch_out + roll_out;
+			if (tm.throttle > 1800) {
+				motor_0 = BASE_THROTTLE - (pitch_out + roll_out) * THROTTLE_SCALE;
+				motor_1 = BASE_THROTTLE + (pitch_out - roll_out) * THROTTLE_SCALE;
+				motor_2 = BASE_THROTTLE + (pitch_out + roll_out) * THROTTLE_SCALE;
+				motor_3 = BASE_THROTTLE + (roll_out - pitch_out) * THROTTLE_SCALE;
+			}
 
 			if (tm.throttle < 1200) {
 				motor_0 = 0;
@@ -80,7 +85,7 @@ void* thread_2_main(void* args)
 			//pthread_mutex_unlock(&print_mtx);
 			//
 			//
-			printf("%d %d %.1f %.1f\n", tm.pitch, tm.roll, pitch_pid.kp, pitch_pid.kd);
+			printf("Throttle: %d \n", tm.throttle);
 
 			if (tm.pitch > 1900) p_up_flag = true;
 			else if (tm.pitch < 1100) p_down_flag = true;
