@@ -1,0 +1,6 @@
+Sensor data noisy! The difference should around 0 on the floor!
+angle is not resetting after 360°. It should be between [0-90].
+Check if yaw direction is correct
+D value is important - we integrate twice
+2 level controller
+rsewiki.elektro.dtu.dk - How to build flight controller

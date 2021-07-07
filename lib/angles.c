@@ -126,6 +126,8 @@ void calculate_angles(void) {
 	position.pitch = 0.95*(position.pitch + gyro.y) + 0.05*accel.x;
 	position.roll = 0.95*(position.roll + gyro.x) + 0.05*accel.y;
 	position.yaw += gyro.z;
+	if (position.yaw > 90) position.yaw = 90;		//We should set limits to it
+	if (position.yaw < -90) position.yaw = -90;
 	pthread_mutex_unlock(&position_mtx);
 }
 

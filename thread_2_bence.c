@@ -8,7 +8,7 @@
 #include "lib/transmitter.h"
 #include "lib/motor.h"
 
-#define CHANGE 0.2
+#define CHANGE 0.1
 #define BASE_THROTTLE 1720
 #define THROTTLE_SCALE 10
 
@@ -43,9 +43,9 @@ void* thread_2_main(void* args)
 
 	while (!angles_is_init());
 
-	pid_create(&pitch_pid, 0.0, 0.0, 0.0, 0.0, 0.0);
-	pid_create(&roll_pid, 0.0, 0.0, 0.0, 0.0, 0.0);
-	//pid_create(&yaw_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(&pitch_pid, 0.5, 0.0, 0.2, 0.0, 0.0);
+	pid_create(&roll_pid, 0.5, 0.0, 0.2, 0.0, 0.0);
+	pid_create(&yaw_pid, 0.0, 0.0, 0.0, 0.0, 0.0);
 
 	while (true) {
 		if (controller_flag) {
@@ -53,19 +53,27 @@ void* thread_2_main(void* args)
 			double motor_0=0, motor_1 = 0, motor_2 = 0, motor_3 = 0;
 			angles_t angles = get_angles();
 
-			double pitch_out = pid_fire(pitch_pid, 0, angles.pitch);
-			double roll_out = pid_fire(roll_pid, 0, angles.roll);
-			double yaw_out = pid_fire(yaw_pid, 0, angles.yaw);
+			double pitch_out = pid_fire(pitch_pid, 0, angles.pitch)*THROTTLE_SCALE;
+			double roll_out = pid_fire(roll_pid, 0, angles.roll)*THROTTLE_SCALE;
+			double yaw_out = pid_fire(yaw_pid, 0, angles.yaw)*THROTTLE_SCALE;
 
 			transmitter_read();
 			transmitter tm = get_transmitter_values();
+	
 
-			if (tm.throttle > 1800) {
-				motor_0 = BASE_THROTTLE - pitch_out - roll_out;
-				motor_1 = BASE_THROTTLE + pitch_out - roll_out;
-				motor_2 = BASE_THROTTLE + pitch_out + roll_out;
-				motor_3 = BASE_THROTTLE + roll_out - pitch_out;
+		/*	double	m_0 = tm.throttle - pitch_out - roll_out + yaw_out;
+			double	m_1 = tm.throttle + pitch_out - roll_out - yaw_out;
+			double	m_2 = tm.throttle + pitch_out + roll_out + yaw_out;
+			double	m_3 = tm.throttle - pitch_out + roll_out - yaw_out;
+		*/
+
+			if (tm.throttle > 1200) {
+				motor_0 = tm.throttle - pitch_out - roll_out + yaw_out;
+				motor_1 = tm.throttle + pitch_out - roll_out - yaw_out;
+				motor_2 = tm.throttle + pitch_out + roll_out + yaw_out;
+				motor_3 = tm.throttle - pitch_out + roll_out - yaw_out;
 			}
+
 
 			if (tm.throttle < 1200) {
 				motor_0 = 0;
@@ -79,13 +87,8 @@ void* thread_2_main(void* args)
 			motor_run(2, (int) motor_2);
 			motor_run(3, (int) motor_3);
 
-			//pthread_mutex_lock(&print_mtx);
-			//printf("Motor: %.3f, %.3f, %.3f, %.3f\n", motor_0, motor_1, motor_2,
-					//motor_3);
-			//pthread_mutex_unlock(&print_mtx);
-			//
-			//
-			printf("%d %d %.1f %.1f \n", tm.pitch, tm.roll, pitch_pid.kp, pitch_pid.kd);
+
+			printf("%.3f %.3f %.3f %.1f %.1f\n", angles.pitch, angles.roll, angles.yaw, pitch_pid.kp, pitch_pid.kd);
 
 			if (tm.pitch > 1900) p_up_flag = true;
 			else if (tm.pitch < 1100) p_down_flag = true;

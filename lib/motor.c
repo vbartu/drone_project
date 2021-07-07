@@ -15,6 +15,7 @@ void motor_run_all(int throttle)
 {
 	throttle = throttle * 2 - 2000;			//Here we scale the throttle signal from [1000-2000] to [0-2000]
 	if (throttle < 700) throttle = 700;
+	if (throttle > 2000) throttle = 2000;
 	
 	
 	*(MOTOR + m1) = throttle;
@@ -31,7 +32,7 @@ void motor_run(int motor_number, int throttle)
 	if (motor_number < 0) motor_number = 0;
 	throttle = throttle * 2 - 2000;
 	if (throttle < 700) throttle = 700;
-	else if (throttle < 1000) throttle = 1000;
+	//else if (throttle < 1000) throttle = 1000;
 	
 	*(MOTOR + motor_number) = throttle;
 	
