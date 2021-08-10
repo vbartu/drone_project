@@ -8,6 +8,7 @@
 #include "lib/timer.h"
 
 #define SETUP_MEASUREMENTS 500
+#define FILTER_LENGTH 10
 
 
 /** Data structures --------------------------------------------------------- */
@@ -122,10 +123,19 @@ void calculate_angles(void) {
 	angles_axis_t gyro = calculate_angles_gyro();
 	angles_axis_t accel = calculate_angles_accel();
 
+	double pitch_acc = 0;
+	double roll_acc = 0;
+	double yaw_acc = 0;
+
 	pthread_mutex_lock(&position_mtx);
-	position.pitch = 0.95*(position.pitch + gyro.y) + 0.05*accel.x;
-	position.roll = 0.95*(position.roll + gyro.x) + 0.05*accel.y;
-	position.yaw += gyro.z;
+	for (int i = 0; i < FILTER_LENGTH; i++) {
+		pitch_acc += 0.95 * (position.pitch + gyro.y) + 0.05 * accel.x;
+		roll_acc += 0.95 * (position.roll + gyro.x) + 0.05 * accel.y;
+		yaw_acc += gyro.z;
+	}
+	position.pitch	= pitch_acc / FILTER_LENGTH;
+	position.roll		= roll_acc / FILTER_LENGTH;
+	position.yaw		= yaw_acc / FILTER_LENGTH;
 	if (position.yaw > 90) position.yaw = 90;		//We should set limits to it
 	if (position.yaw < -90) position.yaw = -90;
 	pthread_mutex_unlock(&position_mtx);
