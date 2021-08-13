@@ -6,6 +6,7 @@
 #include "angles.h"
 #include "main.h"
 #include "lib/timer.h"
+#include "util.h"
 
 #define SETUP_MEASUREMENTS 500
 
@@ -33,6 +34,7 @@ static angles_t position;
 static angles_t agyro;
 static uint64_t last_time;
 static pthread_mutex_t position_mtx = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t print_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 /** Function prototypes ----------------------------------------------------- */
 //static void calculate_angles_gyro(void);
@@ -51,9 +53,9 @@ static angles_axis_t calculate_angles_gyro(void)
 	last_time = current_time;
 
 	angles_axis_t gyro;
-	gyro.x = x_dps * elapsed_time;
-	gyro.y = y_dps * elapsed_time;
-	gyro.z = z_dps * elapsed_time;
+	gyro.x = x_dps;
+	gyro.y = y_dps;
+	gyro.z = z_dps;
 	return gyro;
 }
 
@@ -64,7 +66,7 @@ static angles_axis_t calculate_angles_accel(void)
 	double y = accel_data.y;
 	double z = accel_data.z;
 	angles_axis_t accel;
-	accel.x = -(atan(x / (sqrt(pow(y, 2) + pow(z, 2)))) - accel_err.x)*180/M_PI;
+	accel.x = -(atan(x / (sqrt(pow(y, 2) + pow(z, 2)))) - accel_err.x)*180/M_PI;		//Converts the accelerometer data to angle position [degrees].
 	accel.y = (atan(y / (sqrt(pow(x, 2) + pow(z, 2)))) - accel_err.y)*180/M_PI;
 	accel.z = (atan(z / (sqrt(pow(y, 2) + pow(x, 2)))) - accel_err.z)*180/M_PI;
 	return accel;
@@ -114,8 +116,7 @@ void angles_init(void)
 
 	pthread_mutex_lock(&print_mtx);
 	printf("Gyro err: %.2f, %.2f, %.2f\n", gyro_err.y, gyro_err.x, gyro_err.z);
-	printf("Accel err: %.2f, %.2f, %.2f\n", accel_err.z, accel_err.y,
-			accel_err.z);
+	printf("Accel err: %.2f, %.2f, %.2f\n", accel_err.z, accel_err.y, accel_err.z);
 	pthread_mutex_unlock(&print_mtx);
 	last_time = micros();
 
@@ -134,8 +135,12 @@ void calculate_angles(void) {
 
 	pthread_mutex_lock(&position_mtx);
 
-	pitch_acc = 0.95 * (position.pitch + gyro.y) + 0.05 * accel.x;
-	roll_acc = 0.95 * (position.roll + gyro.x) + 0.05 * accel.y;
+	//pitch_acc = 0.95 * (position.pitch + gyro.y) + 0.05 * accel.x;		//Complementary filtering: Mixing acc and gyro data to minimise both noise and drift. [degrees]
+	//roll_acc = 0.95 * (position.roll + gyro.x) + 0.05 * accel.y;
+	//yaw_acc = 0.95 * (position.yaw + gyro.z) + 0.05 * accel.z;
+	
+	pitch_acc = gyro.y;		//Try to control the angle rate, not the angle position
+	roll_acc = gyro.x;
 	yaw_acc = gyro.z;
 
 	pitch_avg += alpha * (pitch_acc - pitch_avg);
@@ -144,7 +149,8 @@ void calculate_angles(void) {
 
 	position.pitch = pitch_avg;
 	position.roll = roll_avg;
-	position.yaw += yaw_avg;
+	position.yaw = yaw_avg;
+	
 
 	if (position.yaw > 90) position.yaw = 90;		//We should set limits to it
 	if (position.yaw < -90) position.yaw = -90;

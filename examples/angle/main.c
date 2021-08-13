@@ -37,13 +37,13 @@ static void* thread1_main(void* attr)
 
 		if (print_flag) {
 			print_flag = false;
-			angles_t angles = get_angles2();
+			angles_t angles = get_angles();
 			printf("Pitch: %.2f, Roll: %.2f, Yaw: %.2f\n", angles.pitch,
 					angles.roll, angles.yaw);
 		}
 
 		if (read_flag) {
-			calculate_angles2();
+			calculate_angles();
 		}
 	}
 

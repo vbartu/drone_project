@@ -85,7 +85,7 @@ void* thread_2_main(void* args)
 			//pthread_mutex_unlock(&print_mtx);
 			//
 			//
-			printf("%d %d %.1f %.1f \n", tm.pitch, tm.roll, pitch_pid.kp, pitch_pid.kd);
+			printf("yaw %.2f %.1f %.1f \n", angles.yaw, pitch_pid.kp, pitch_pid.kd);
 
 			if (tm.pitch > 1900) p_up_flag = true;
 			else if (tm.pitch < 1100) p_down_flag = true;
