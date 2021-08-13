@@ -6,6 +6,8 @@
 #include "lib/timer.h"
 #include "lib/angles.h"
 
+pthread_mutex_t print_mtx = PTHREAD_MUTEX_INITIALIZER;
+
 static volatile bool print_flag;
 static volatile bool read_flag;
 

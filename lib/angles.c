@@ -34,7 +34,6 @@ static angles_t position;
 static angles_t agyro;
 static uint64_t last_time;
 static pthread_mutex_t position_mtx = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t print_mtx = PTHREAD_MUTEX_INITIALIZER;
 
 /** Function prototypes ----------------------------------------------------- */
 //static void calculate_angles_gyro(void);
