@@ -8,7 +8,6 @@
 #include "lib/timer.h"
 
 #define SETUP_MEASUREMENTS 500
-#define FILTER_LENGTH 10
 
 
 /** Data structures --------------------------------------------------------- */
@@ -20,12 +19,18 @@ typedef struct angles_axis_t {
 
 /** Static variables -------------------------------------------------------- */
 static bool init;
+static double pitch_avg = 0;
+static double roll_avg = 0;
+static double yaw_avg = 0;
+static double alpha = 0.8;
+
 static pthread_mutex_t init_mtx = PTHREAD_MUTEX_INITIALIZER;
 static angles_axis_t gyro_err;
 static angles_axis_t accel_err;
 //static angles_axis_t gyro;
 //static angles_axis_t accel;
 static angles_t position;
+static angles_t agyro;
 static uint64_t last_time;
 static pthread_mutex_t position_mtx = PTHREAD_MUTEX_INITIALIZER;
 
@@ -128,14 +133,19 @@ void calculate_angles(void) {
 	double yaw_acc = 0;
 
 	pthread_mutex_lock(&position_mtx);
-	for (int i = 0; i < FILTER_LENGTH; i++) {
-		pitch_acc += 0.95 * (position.pitch + gyro.y) + 0.05 * accel.x;
-		roll_acc += 0.95 * (position.roll + gyro.x) + 0.05 * accel.y;
-		yaw_acc += gyro.z;
-	}
-	position.pitch	= pitch_acc / FILTER_LENGTH;
-	position.roll		= roll_acc / FILTER_LENGTH;
-	position.yaw		= yaw_acc / FILTER_LENGTH;
+
+	pitch_acc = 0.95 * (position.pitch + gyro.y) + 0.05 * accel.x;
+	roll_acc = 0.95 * (position.roll + gyro.x) + 0.05 * accel.y;
+	yaw_acc = gyro.z;
+
+	pitch_avg += alpha * (pitch_acc - pitch_avg);
+	roll_avg += alpha * (roll_acc - roll_avg);
+	yaw_avg += alpha * (yaw_acc - yaw_avg);
+
+	position.pitch = pitch_avg;
+	position.roll = roll_avg;
+	position.yaw += yaw_avg;
+
 	if (position.yaw > 90) position.yaw = 90;		//We should set limits to it
 	if (position.yaw < -90) position.yaw = -90;
 	pthread_mutex_unlock(&position_mtx);
