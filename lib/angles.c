@@ -30,8 +30,9 @@ static angles_axis_t gyro_err;
 static angles_axis_t accel_err;
 //static angles_axis_t gyro;
 //static angles_axis_t accel;
+
 static angles_t position;
-static angles_t agyro;
+static angles_t angle_vel;
 static uint64_t last_time;
 static pthread_mutex_t position_mtx = PTHREAD_MUTEX_INITIALIZER;
 
@@ -52,9 +53,23 @@ static angles_axis_t calculate_angles_gyro(void)
 	last_time = current_time;
 
 	angles_axis_t gyro;
-	gyro.x = x_dps ;
-	gyro.y = y_dps ;
-	gyro.z = z_dps ;
+	gyro.x = x_dps * elapsed_time;
+	gyro.y = y_dps * elapsed_time;
+	gyro.z = z_dps * elapsed_time;
+	return gyro;
+}
+
+static angles_axis_t calculate_angle_vel_gyro(void)
+{
+	mpu6050_gyro_t gyro_data = mpu6050_gyro_read();
+	double x_dps = gyro_data.x / 32.8 - gyro_err.x;
+	double y_dps = gyro_data.y / 32.8 - gyro_err.y;
+	double z_dps = gyro_data.z / 32.8 - gyro_err.z;
+
+	angles_axis_t gyro;
+	gyro.x = x_dps;
+	gyro.y = y_dps;
+	gyro.z = z_dps;
 	return gyro;
 }
 
@@ -126,6 +141,7 @@ void angles_init(void)
 
 void calculate_angles(void) {
 	angles_axis_t gyro = calculate_angles_gyro();
+	angles_axis_t gyro_vel = calculate_angle_vel_gyro();
 	angles_axis_t accel = calculate_angles_accel();
 
 	double pitch_acc = 0;
@@ -134,18 +150,13 @@ void calculate_angles(void) {
 
 	pthread_mutex_lock(&position_mtx);
 
-	//pitch_acc = 0.95 * (position.pitch + gyro.y) + 0.05 * accel.x;		//Complementary filtering: Mixing acc and gyro data to minimise both noise and drift. [degrees]
-	//roll_acc = 0.95 * (position.roll + gyro.x) + 0.05 * accel.y;
-	//yaw_acc = 0.95 * (position.yaw + gyro.z) + 0.05 * accel.z;
+	pitch_acc = 0.95 * (position.pitch + gyro.y) + 0.05 * accel.x;		//Complementary filtering: Mixing acc and gyro data to minimise both noise and drift. [degrees]
+	roll_acc = 0.95 * (position.roll + gyro.x) + 0.05 * accel.y;
+	yaw_acc = 0.95 * (position.yaw + gyro.z) + 0.05 * accel.z;
 	
-	pitch_acc = gyro.y;		//Try to control the angle rate, not the angle position
-	roll_acc = gyro.x;
-	yaw_acc = gyro.z;
-
-
-	pitch_acc = gyro.y;
-	roll_acc = gyro.x;
-	yaw_acc = gyro.z;
+	angle_vel.pitch = gyro_vel.y;		//Try to control the angle rate, not the angle position
+	angle_vel.roll = gyro_vel.x;
+	angle_vel.yaw = gyro_vel.z;
 
 	pitch_avg += alpha * (pitch_acc - pitch_avg);
 	roll_avg += alpha * (roll_acc - roll_avg);
@@ -165,6 +176,14 @@ angles_t get_angles(void)
 {
 	pthread_mutex_lock(&position_mtx);
 	angles_t aux = position;
+	pthread_mutex_unlock(&position_mtx);
+	return aux;
+}
+
+angles_t get_angle_vel(void)
+{
+	pthread_mutex_lock(&position_mtx);
+	angles_t aux = angle_vel;
 	pthread_mutex_unlock(&position_mtx);
 	return aux;
 }
