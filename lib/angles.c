@@ -51,9 +51,9 @@ static angles_axis_t calculate_angles_gyro(void)
 	last_time = current_time;
 
 	angles_axis_t gyro;
-	gyro.x = x_dps * elapsed_time;
-	gyro.y = y_dps * elapsed_time;
-	gyro.z = z_dps * elapsed_time;
+	gyro.x = x_dps ;
+	gyro.y = y_dps ;
+	gyro.z = z_dps ;
 	return gyro;
 }
 
@@ -138,13 +138,18 @@ void calculate_angles(void) {
 	roll_acc = 0.95 * (position.roll + gyro.x) + 0.05 * accel.y;
 	yaw_acc = gyro.z;
 
+
+	pitch_acc = gyro.y;
+	roll_acc = gyro.x;
+	yaw_acc = gyro.z;
+
 	pitch_avg += alpha * (pitch_acc - pitch_avg);
 	roll_avg += alpha * (roll_acc - roll_avg);
 	yaw_avg += alpha * (yaw_acc - yaw_avg);
 
 	position.pitch = pitch_avg;
 	position.roll = roll_avg;
-	position.yaw += yaw_avg;
+	position.yaw = yaw_avg;
 
 	if (position.yaw > 90) position.yaw = 90;		//We should set limits to it
 	if (position.yaw < -90) position.yaw = -90;

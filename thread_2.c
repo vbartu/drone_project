@@ -45,7 +45,7 @@ void* thread_2_main(void* args)
 
 	pid_create(&pitch_pid, 0.0, 0.0, 0.0, 0.0, 0.0);
 	pid_create(&roll_pid, 0.0, 0.0, 0.0, 0.0, 0.0);
-	//pid_create(&yaw_pid, 1.0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(&yaw_pid, 0.0, 0.0, 0.0, 0.0, 0.0);
 
 	while (true) {
 		if (controller_flag) {
@@ -85,18 +85,20 @@ void* thread_2_main(void* args)
 			//pthread_mutex_unlock(&print_mtx);
 			//
 			//
-			printf("%d %d %.1f %.1f \n", tm.pitch, tm.roll, pitch_pid.kp, pitch_pid.kd);
+			//printf("Kp: %.2f Ki: %.2f Kd: %.2f\n", pitch_pid.kp, pitch_pid.ki, pitch_pid.kd);
+
+			printf("pitch: %.2f roll: %.2f Yaw: %.2f\n", angles.pitch, angles.roll, angles.yaw);
 
 			if (tm.pitch > 1900) p_up_flag = true;
 			else if (tm.pitch < 1100) p_down_flag = true;
 			else if (tm.pitch > 1300 && tm.pitch < 1700) {
 				if (p_up_flag) {
 					pitch_pid.kp += CHANGE;
-					roll_pid.kp += CHANGE;
+					yaw_pid.kp += CHANGE;
 					p_up_flag = false;
 				} else if (p_down_flag) {
 					pitch_pid.kp -= CHANGE;
-					roll_pid.kp -= CHANGE;
+					yaw_pid.kp -= CHANGE;
 					p_down_flag = false;
 				}
 			}
@@ -106,11 +108,11 @@ void* thread_2_main(void* args)
 			else if (tm.roll > 1300 && tm.roll < 1700) {
 				if (d_up_flag) {
 					pitch_pid.kd += CHANGE;
-					roll_pid.kd += CHANGE;
+					yaw_pid.kd += CHANGE;
 					d_up_flag = false;
 				} else if (d_down_flag) {
 					pitch_pid.kd -= CHANGE;
-					roll_pid.kd -= CHANGE;
+					yaw_pid.kd -= CHANGE;
 					d_down_flag = false;
 				}
 			}
