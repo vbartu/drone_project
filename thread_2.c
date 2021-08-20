@@ -9,7 +9,7 @@
 #include "lib/motor.h"
 
 #define CHANGE 0.2
-#define BASE_THROTTLE 1770
+#define BASE_THROTTLE 1750
 #define THROTTLE_SCALE 10
 
 /** Data structures --------------------------------------------------------- */
@@ -57,12 +57,12 @@ void* thread_2_main(void* args)
 
 	while (!angles_is_init());
 
-	pid_create(&pitch_pid, 0.6, 0.0, 0.4, 0.0, 0.0);
-	pid_create(&roll_pid, 0.6, 0.0, 0.4, 0.0, 0.0);
-	pid_create(&yaw_pid, 0.5, 0.0, 0.0, 0.0, 0.0);
+	pid_create(&pitch_pid, 0.4, 0.0, 0.6, 0.0, 0.0);
+	pid_create(&roll_pid, 0.4, 0.0, 0.6, 0.0, 0.0);
+	pid_create(&yaw_pid, 0, 0.0, 0.0, 0.0, 0.0);
 
-	pid_create(&pitch_vel_pid, 0.6, 0.0, 0.4, 0.0, 0.0);
-	pid_create(&roll_vel_pid, 0.6, 0.0, 0.4, 0.0, 0.0);
+	pid_create(&pitch_vel_pid, 0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(&roll_vel_pid, 0, 0.0, 0.0, 0.0, 0.0);
 	pid_create(&yaw_vel_pid, 0.0, 0.0, 0.0, 0.0, 0.0);
 
 	while (true) {
@@ -119,12 +119,12 @@ void* thread_2_main(void* args)
 					//pitch_pid.kp += CHANGE;
 					//roll_pid.kd += CHANGE;
 					//roll_pid.kd += CHANGE;
-					yaw_vel_pid.kp += 0.5;
+					yaw_pid.kp += 0.5;
 					p_up_flag = false;
 				} else if (p_down_flag) {
 					//pitch_pid.kp -= CHANGE;
 					//roll_pid.kd -= CHANGE;
-					yaw_vel_pid.kp -= 0.5;
+					yaw_pid.kp -= 0.5;
 					p_down_flag = false;
 				}
 			}
@@ -135,12 +135,12 @@ void* thread_2_main(void* args)
 				if (d_up_flag) {
 					//pitch_pid.kd += CHANGE;
 					//roll_pid.kd += CHANGE;
-					yaw_vel_pid.kd += 0.5;
+					yaw_pid.kd += 0.5;
 					d_up_flag = false;
 				} else if (d_down_flag) {
-					//itch_pid.kd -= CHANGE;
+					//pitch_pid.kd -= CHANGE;
 					//roll_pid.kd -= CHANGE;
-					yaw_vel_pid.kd -= 0.5;
+					yaw_pid.kd -= 0.5;
 					d_down_flag = false;
 				}
 			}

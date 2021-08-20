@@ -23,6 +23,9 @@ static bool init;
 static double pitch_avg = 0;
 static double roll_avg = 0;
 static double yaw_avg = 0;
+static double gyro_x_avg = 0;
+static double gyro_y_avg = 0;
+static double gyro_z_avg = 0;
 static double alpha = 0.8;
 
 static pthread_mutex_t init_mtx = PTHREAD_MUTEX_INITIALIZER;
@@ -153,19 +156,22 @@ void calculate_angles(void) {
 	pitch_acc = 0.95 * (position.pitch + gyro.y) + 0.05 * accel.x;		//Complementary filtering: Mixing acc and gyro data to minimise both noise and drift. [degrees]
 	roll_acc = 0.95 * (position.roll + gyro.x) + 0.05 * accel.y;
 	yaw_acc = 0.95 * (position.yaw + gyro.z) + 0.05 * accel.z;
-	
-	angle_vel.pitch = gyro_vel.y;		//Try to control the angle rate, not the angle position
-	angle_vel.roll = gyro_vel.x;
-	angle_vel.yaw = gyro_vel.z;
 
 	pitch_avg += alpha * (pitch_acc - pitch_avg);
 	roll_avg += alpha * (roll_acc - roll_avg);
 	yaw_avg += alpha * (yaw_acc - yaw_avg);
 
+	gyro_x_avg += alpha * (gyro_vel.x - gyro_x_avg);
+	gyro_y_avg += alpha * (gyro_vel.y - gyro_y_avg);
+	gyro_z_avg += alpha * (gyro_vel.z - gyro_z_avg);
+
 	position.pitch = pitch_avg;
 	position.roll = roll_avg;
 	position.yaw = yaw_avg;
 	
+	angle_vel.pitch = gyro_y_avg;
+	angle_vel.roll = gyro_x_avg;
+	angle_vel.yaw = gyro_z_avg;
 
 	if (position.yaw > 90) position.yaw = 90;		//We should set limits to it
 	if (position.yaw < -90) position.yaw = -90;
