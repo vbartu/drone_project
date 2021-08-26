@@ -8,7 +8,8 @@
 #include "lib/transmitter.h"
 #include "lib/motor.h"
 
-#define CHANGE 0.2
+#define CHANGE 0.1
+//#define BASE_THROTTLE 1770
 #define BASE_THROTTLE 1750
 #define THROTTLE_SCALE 10
 
@@ -57,13 +58,13 @@ void* thread_2_main(void* args)
 
 	while (!angles_is_init());
 
-	pid_create(&pitch_pid, 0.4, 0.0, 0.6, 0.0, 0.0);
-	pid_create(&roll_pid, 0.4, 0.0, 0.6, 0.0, 0.0);
-	pid_create(&yaw_pid, 0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(&pitch_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
+	pid_create(&roll_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
+	//pid_create(&yaw_pid, 0, 0.0, 0.0, 0.0, 0.0);
 
-	pid_create(&pitch_vel_pid, 0, 0.0, 0.0, 0.0, 0.0);
-	pid_create(&roll_vel_pid, 0, 0.0, 0.0, 0.0, 0.0);
-	pid_create(&yaw_vel_pid, 0.0, 0.0, 0.0, 0.0, 0.0);
+	pid_create(&pitch_vel_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
+	pid_create(&roll_vel_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
+	pid_create(&yaw_vel_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
 
 	while (true) {
 		if (controller_flag) {
@@ -74,20 +75,31 @@ void* thread_2_main(void* args)
 
 			pid_angle.pitch = pid_fire(pitch_pid, 0, angles.pitch);
 			pid_angle.roll = pid_fire(roll_pid, 0, angles.roll);
-			pid_angle.yaw = pid_fire(yaw_pid, 0, angles.yaw);
+			//pid_angle.yaw = pid_fire(yaw_pid, 0, angles.yaw);
 
 			pid_vel.pitch = pid_fire(pitch_vel_pid, pid_angle.pitch, angles_vel.pitch);
 			pid_vel.roll = pid_fire(roll_vel_pid, pid_angle.roll, angles_vel.roll);
-			pid_vel.yaw = pid_fire(yaw_vel_pid, pid_angle.yaw, angles_vel.yaw);
+			pid_vel.yaw = pid_fire(yaw_vel_pid, 0, angles_vel.yaw);
 
 			transmitter_read();
 			transmitter tm = get_transmitter_values();
 
-			if (tm.throttle > 1800) {
-				motor_0 = BASE_THROTTLE - pid_vel.pitch - pid_vel.roll - pid_vel.yaw;
-				motor_1 = BASE_THROTTLE + pid_vel.pitch - pid_vel.roll + pid_vel.yaw;
-				motor_2 = BASE_THROTTLE + pid_vel.pitch + pid_vel.roll - pid_vel.yaw;
-				motor_3 = BASE_THROTTLE + pid_vel.roll - pid_vel.pitch + pid_vel.yaw;
+			int throttle = tm.throttle;
+			if (tm.throttle > 1500) {
+
+				motor_0 = tm.throttle - pid_vel.pitch - pid_vel.roll - pid_vel.yaw;
+				motor_1 = tm.throttle + pid_vel.pitch - pid_vel.roll + pid_vel.yaw;
+				motor_2 = tm.throttle + pid_vel.pitch + pid_vel.roll - pid_vel.yaw;
+				motor_3 = tm.throttle + pid_vel.roll - pid_vel.pitch + pid_vel.yaw;
+
+				if (motor_0 < BASE_THROTTLE)
+					motor_0 = BASE_THROTTLE;
+				else if (motor_1 < BASE_THROTTLE)
+					motor_1 = BASE_THROTTLE;
+				else if (motor_2 < BASE_THROTTLE)
+					motor_2 = BASE_THROTTLE;
+				else if (motor_3 < BASE_THROTTLE)
+					motor_3 = BASE_THROTTLE;
 			}
 
 			if (tm.throttle < 1200) {
@@ -110,21 +122,23 @@ void* thread_2_main(void* args)
 			//
 			//printf("Kp: %.2f Ki: %.2f Kd: %.2f\n", pitch_pid.kp, pitch_pid.ki, pitch_pid.kd);
 
-			printf("pitch_a: %.2f pitch_pid2: %.2f pitch_v: %.2f pitch_pid2: %.2f m1: %.2f m2: %.2f\n", angles.pitch, pid_angle.pitch, angles_vel.pitch, pid_vel.pitch, motor_0, motor_1);
+		//	printf("yaw_a: %.2f yaw_pid: %.2f yaw_v: %.2f yaw_pidv: %.2f m1: %.2f m2: %.2f\n", angles.yaw, pid_angle.yaw, angles_vel.yaw, pid_vel.yaw, motor_0, motor_1);
+			printf("pitch_a: %.2f pitch_pid: %.2f pitch_v: %.2f pitch_pidv: %.2f m1: %.2f m2: %d\n", angles.pitch, pid_angle.pitch, angles_vel.pitch, pid_vel.pitch, pitch_vel_pid.kp, tm.throttle);
+
 
 			if (tm.pitch > 1900) p_up_flag = true;
 			else if (tm.pitch < 1100) p_down_flag = true;
 			else if (tm.pitch > 1300 && tm.pitch < 1700) {
 				if (p_up_flag) {
-					//pitch_pid.kp += CHANGE;
+					pitch_vel_pid.kp += CHANGE;
+					roll_vel_pid.kp += CHANGE;
 					//roll_pid.kd += CHANGE;
-					//roll_pid.kd += CHANGE;
-					yaw_pid.kp += 0.5;
+					//yaw_vel_pid.kp += 0.5;
 					p_up_flag = false;
 				} else if (p_down_flag) {
-					//pitch_pid.kp -= CHANGE;
-					//roll_pid.kd -= CHANGE;
-					yaw_pid.kp -= 0.5;
+					pitch_vel_pid.kp -= CHANGE;
+					roll_vel_pid.kp -= CHANGE;
+					//yaw_vel_pid.kp -= 0.5;
 					p_down_flag = false;
 				}
 			}
@@ -133,16 +147,17 @@ void* thread_2_main(void* args)
 			else if (tm.roll < 1100) d_down_flag = true;
 			else if (tm.roll > 1300 && tm.roll < 1700) {
 				if (d_up_flag) {
-					//pitch_pid.kd += CHANGE;
-					//roll_pid.kd += CHANGE;
-					yaw_pid.kd += 0.5;
+					pitch_pid.kp += CHANGE;
+					roll_pid.kp += CHANGE;
+					//yaw_vel_pid.kd += 0.5;
 					d_up_flag = false;
 				} else if (d_down_flag) {
-					//pitch_pid.kd -= CHANGE;
-					//roll_pid.kd -= CHANGE;
-					yaw_pid.kd -= 0.5;
+					pitch_pid.kp -= CHANGE;
+					roll_pid.kp -= CHANGE;
+					// yaw_vel_pid.kd -= 0.5;
 					d_down_flag = false;
 				}
+				
 			}
 		}
 
