@@ -7,15 +7,16 @@
 #include "main.h"
 #include "lib/timer.h"
 #include "util.h"
+#include "lib/fixedptc.h"
 
 #define SETUP_MEASUREMENTS 500
 
 
 /** Data structures --------------------------------------------------------- */
 typedef struct angles_axis_t {
-	double x;
-	double y;
-	double z;
+	fixedpt x;
+	fixedpt y;
+	fixedpt z;
 } angles_axis_t;
 
 /** Static variables -------------------------------------------------------- */
@@ -47,27 +48,35 @@ static pthread_mutex_t position_mtx = PTHREAD_MUTEX_INITIALIZER;
 static angles_axis_t calculate_angles_gyro(void)
 {
 	mpu6050_gyro_t gyro_data = mpu6050_gyro_read();
-	double x_dps = gyro_data.x / 32.8 - gyro_err.x;
-	double y_dps = gyro_data.y / 32.8 - gyro_err.y;
-	double z_dps = gyro_data.z / 32.8 - gyro_err.z;
+	fixedpt gyro_x_fx = fixedpt_fromint(gyro_data.x);
+	fixedpt gyro_y_fx = fixedpt_fromint(gyro_data.y);
+	fixedpt gyro_z_fx = fixedpt_fromint(gyro_data.z);
+
+	fixedpt x_dps = fixedpt_div(gyro_x_fx, fixedpt_rconst(32.8)) - gyro_err.x;
+	fixedpt y_dps = fixedpt_div(gyro_y_fx, fixedpt_rconst(32.8)) - gyro_err.y;
+	fixedpt z_dps = fixedpt_div(gyro_z_fx, fixedpt_rconst(32.8)) - gyro_err.z;
 
 	uint64_t current_time = micros();
-	double elapsed_time = (current_time - last_time) / 1000000.0;
+	fixedpt elapsed_time = fixedpt_rconst((current_time - last_time) / 1000000.0);
 	last_time = current_time;
 
 	angles_axis_t gyro;
-	gyro.x = x_dps * elapsed_time;
-	gyro.y = y_dps * elapsed_time;
-	gyro.z = z_dps * elapsed_time;
+	gyro.x = fixedpt_mul(x_dps, elapsed_time);
+	gyro.y = fixedpt_mul(y_dps, elapsed_time);
+	gyro.z = fixedpt_mul(z_dps, elapsed_time);
 	return gyro;
 }
 
 static angles_axis_t calculate_angle_vel_gyro(void)
 {
 	mpu6050_gyro_t gyro_data = mpu6050_gyro_read();
-	double x_dps = gyro_data.x / 32.8 - gyro_err.x;
-	double y_dps = gyro_data.y / 32.8 - gyro_err.y;
-	double z_dps = gyro_data.z / 32.8 - gyro_err.z;
+	fixedpt gyro_x_fx = fixedpt_fromint(gyro_data.x);
+	fixedpt gyro_y_fx = fixedpt_fromint(gyro_data.y);
+	fixedpt gyro_z_fx = fixedpt_fromint(gyro_data.z);
+
+	fixedpt x_dps = fixedpt_div(gyro_x_fx, fixedpt_rconst(32.8)) - gyro_err.x;
+	fixedpt y_dps = fixedpt_div(gyro_y_fx, fixedpt_rconst(32.8)) - gyro_err.y;
+	fixedpt z_dps = fixedpt_div(gyro_z_fx, fixedpt_rconst(32.8)) - gyro_err.z;
 
 	angles_axis_t gyro;
 	gyro.x = x_dps;
@@ -83,9 +92,10 @@ static angles_axis_t calculate_angles_accel(void)
 	double y = accel_data.y;
 	double z = accel_data.z;
 	angles_axis_t accel;
-	accel.x = -(atan(x / (sqrt(pow(y, 2) + pow(z, 2)))) - accel_err.x)*180/M_PI;		//Converts the accelerometer data to angle position [degrees].
-	accel.y = (atan(y / (sqrt(pow(x, 2) + pow(z, 2)))) - accel_err.y)*180/M_PI;
-	accel.z = (atan(z / (sqrt(pow(y, 2) + pow(x, 2)))) - accel_err.z)*180/M_PI;
+
+	accel.x = fixedpt_rconst (-(atan(x / (sqrt(pow(y, 2) + pow(z, 2)))) - accel_err.x)*180/M_PI);		//Converts the accelerometer data to angle position [degrees].
+	accel.y = fixedpt_rconst( (atan(y / (sqrt(pow(x, 2) + pow(z, 2)))) - accel_err.y)*180/M_PI);
+	accel.z = fixedpt_rconst( (atan(z / (sqrt(pow(y, 2) + pow(x, 2)))) - accel_err.z)*180/M_PI);
 	return accel;
 }
 
@@ -108,9 +118,9 @@ void angles_init(void)
 
 	for (int i = 0; i < SETUP_MEASUREMENTS; i++) {
 		mpu6050_gyro_t gyro_data = mpu6050_gyro_read();
-		gyro_x += gyro_data.x;
-		gyro_y += gyro_data.y;
-		gyro_z += gyro_data.z;
+		gyro_x = gyro_data.x + gyro_x;
+		gyro_y = gyro_data.y + gyro_y;
+		gyro_z = gyro_data.z + gyro_z;
 
 		mpu6050_accel_t accel_data = mpu6050_accel_read();
 		accel_x += accel_data.x;
@@ -120,20 +130,21 @@ void angles_init(void)
 		delay(10);
 	}
 
-	gyro_err.x = gyro_x / 32.8 / (double) SETUP_MEASUREMENTS;
-	gyro_err.y = gyro_y / 32.8 / (double) SETUP_MEASUREMENTS;
-	gyro_err.z = gyro_z / 32.8 / (double) SETUP_MEASUREMENTS;
+	gyro_err.x = fixedpt_div(gyro_x, fixedpt_div(fixedpt_rconst(32.8), fixedpt_rconst(SETUP_MEASUREMENTS)));
+	gyro_err.y = fixedpt_div(gyro_y, fixedpt_div(fixedpt_rconst(32.8), fixedpt_rconst(SETUP_MEASUREMENTS)));
+	gyro_err.z = fixedpt_div(gyro_z, fixedpt_div(fixedpt_rconst(32.8), fixedpt_rconst(SETUP_MEASUREMENTS)));
 
 	double x = accel_x / (double) SETUP_MEASUREMENTS;
 	double y = accel_y / (double) SETUP_MEASUREMENTS;
 	double z = accel_z / (double) SETUP_MEASUREMENTS;
-	accel_err.x = atan(x / (sqrt(pow(y, 2) + pow(z, 2))));
-	accel_err.y = atan(y / (sqrt(pow(x, 2) + pow(z, 2))));
-	accel_err.z = atan(z / (sqrt(pow(y, 2) + pow(x, 2))));
+
+	accel_err.x = fixedpt_rconst(atan(x / (sqrt(pow(y, 2) + pow(z, 2)))));
+	accel_err.y = fixedpt_rconst(atan(y / (sqrt(pow(x, 2) + pow(z, 2)))));
+	accel_err.z = fixedpt_rconst(atan(z / (sqrt(pow(y, 2) + pow(x, 2)))));
 
 	pthread_mutex_lock(&print_mtx);
-	printf("Gyro err: %.2f, %.2f, %.2f\n", gyro_err.y, gyro_err.x, gyro_err.z);
-	printf("Accel err: %.2f, %.2f, %.2f\n", accel_err.z, accel_err.y, accel_err.z);
+	printf("Gyro err: %.2f, %.2f, %.2f\n", fixedpt_2float(gyro_err.y), fixedpt_2float(gyro_err.x), fixedpt_2float(gyro_err.z));
+	printf("Accel err: %.2f, %.2f, %.2f\n", fixedpt_2float(accel_err.z), fixedpt_2float(accel_err.y), fixedpt_2float(accel_err.z));
 	pthread_mutex_unlock(&print_mtx);
 	last_time = micros();
 
@@ -147,23 +158,23 @@ void calculate_angles(void) {
 	angles_axis_t gyro_vel = calculate_angle_vel_gyro();
 	angles_axis_t accel = calculate_angles_accel();
 
-	double pitch_acc = 0;
-	double roll_acc = 0;
-	double yaw_acc = 0;
+	fixedpt pitch_acc = 0;
+	fixedpt roll_acc = 0;
+	fixedpt yaw_acc = 0;
 
 	pthread_mutex_lock(&position_mtx);
 
-	pitch_acc = 0.95 * (position.pitch + gyro.y) + 0.05 * accel.x;		//Complementary filtering: Mixing acc and gyro data to minimise both noise and drift. [degrees]
-	roll_acc = 0.95 * (position.roll + gyro.x) + 0.05 * accel.y;
-	yaw_acc = 0.95 * (position.yaw + gyro.z) + 0.05 * accel.z;
+	pitch_acc = fixedpt_mul(fixedpt_rconst(0.95), (position.pitch - gyro.y)) + fixedpt_mul(fixedpt_rconst(0.05), accel.x);
+	roll_acc = fixedpt_mul(fixedpt_rconst(0.95), (position.roll - gyro.x)) + fixedpt_mul(fixedpt_rconst(0.05), accel.y);
+	yaw_acc = fixedpt_mul(fixedpt_rconst(0.95), (position.yaw - gyro.z)) + fixedpt_mul(fixedpt_rconst(0.05), accel.z);
 
-	pitch_avg += alpha * (pitch_acc - pitch_avg);
-	roll_avg += alpha * (roll_acc - roll_avg);
-	yaw_avg += alpha * (yaw_acc - yaw_avg);
+	pitch_avg = pitch_avg + fixedpt_mul(alpha, (pitch_acc - pitch_avg) );
+	roll_avg = roll_avg + fixedpt_mul(alpha, (roll_acc - roll_avg) );
+	yaw_avg = yaw_avg + fixedpt_mul(alpha, (yaw_acc - yaw_avg) );
 
-	gyro_x_avg += alpha * (gyro_vel.x - gyro_x_avg);
-	gyro_y_avg += alpha * (gyro_vel.y - gyro_y_avg);
-	gyro_z_avg += alpha * (gyro_vel.z - gyro_z_avg);
+	gyro_x_avg = gyro_x_avg + fixedpt_mul(alpha, fixedpt_sub(gyro_vel.x, gyro_x_avg));
+	gyro_y_avg = gyro_y_avg + fixedpt_mul(alpha, fixedpt_sub(gyro_vel.y, gyro_y_avg));
+	gyro_z_avg = gyro_z_avg + fixedpt_mul(alpha, fixedpt_sub(gyro_vel.z, gyro_z_avg));
 
 	position.pitch = pitch_avg;
 	position.roll = roll_avg;
@@ -173,8 +184,8 @@ void calculate_angles(void) {
 	angle_vel.roll = gyro_x_avg;
 	angle_vel.yaw = gyro_z_avg;
 
-	if (position.yaw > 90) position.yaw = 90;		//We should set limits to it
-	if (position.yaw < -90) position.yaw = -90;
+	if (fixedpt_2float( position.yaw) > 90)  position.yaw = fixedpt_rconst(90);		//We should set limits to it
+	if (fixedpt_2float( position.yaw) < -90) position.yaw = fixedpt_rconst (-90);
 	pthread_mutex_unlock(&position_mtx);
 }
 
