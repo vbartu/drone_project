@@ -93,9 +93,9 @@ static angles_axis_t calculate_angles_accel(void)
 	double z = accel_data.z;
 	angles_axis_t accel;
 
-	accel.x = fixedpt_rconst (-(atan(x / (sqrt(pow(y, 2) + pow(z, 2)))) - accel_err.x)*180/M_PI);		//Converts the accelerometer data to angle position [degrees].
-	accel.y = fixedpt_rconst( (atan(y / (sqrt(pow(x, 2) + pow(z, 2)))) - accel_err.y)*180/M_PI);
-	accel.z = fixedpt_rconst( (atan(z / (sqrt(pow(y, 2) + pow(x, 2)))) - accel_err.z)*180/M_PI);
+	accel.x = fixedpt_rconst(-(atan(x / (sqrt(pow(y, 2) + pow(z, 2)))) - fixedpt_2float(accel_err.x)) * 180 / M_PI);		//Converts the accelerometer data to angle position [degrees].
+	accel.y = fixedpt_rconst((atan(y / (sqrt(pow(x, 2) + pow(z, 2)))) - fixedpt_2float(accel_err.y)) * 180 / M_PI);
+	accel.z = fixedpt_rconst((atan(z / (sqrt(pow(y, 2) + pow(x, 2)))) - fixedpt_2float(accel_err.z)) * 180 / M_PI);
 	return accel;
 }
 
