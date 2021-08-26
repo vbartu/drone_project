@@ -4,12 +4,13 @@
 #include <stdbool.h>
 
 #include "sensors/mpu6050.h"
+#include "lib/fixedptc.h"
 
 
 typedef struct angles_t {
-	double pitch;
-	double roll;
-	double yaw;
+	fixedpt pitch;
+	fixedpt roll;
+	fixedpt yaw;
 } angles_t;
 
 

@@ -21,13 +21,13 @@ typedef struct angles_axis_t {
 
 /** Static variables -------------------------------------------------------- */
 static bool init;
-static double pitch_avg = 0;
-static double roll_avg = 0;
-static double yaw_avg = 0;
-static double gyro_x_avg = 0;
-static double gyro_y_avg = 0;
-static double gyro_z_avg = 0;
-static double alpha = 0.8;
+static fixedpt pitch_avg = 0;
+static fixedpt roll_avg = 0;
+static fixedpt yaw_avg = 0;
+static fixedpt gyro_x_avg = 0;
+static fixedpt gyro_y_avg = 0;
+static fixedpt gyro_z_avg = 0;
+static fixedpt alpha = fixedpt_rconst(0.8);
 
 static pthread_mutex_t init_mtx = PTHREAD_MUTEX_INITIALIZER;
 static angles_axis_t gyro_err;

@@ -4,6 +4,7 @@
 #include "main.h"
 #include "lib/angles.h"
 #include "lib/timer.h"
+#include "lib/fixedptc.h"
 
 /** Static variables -------------------------------------------------------- */
 static volatile bool read_angles_flag;

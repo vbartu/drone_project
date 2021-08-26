@@ -90,10 +90,10 @@ void* thread_2_main(void* args)
 			int throttle = tm.throttle;
 			if (tm.throttle > 1500) {
 
-				motor_0 = tm.throttle - fixedpt_2float(pid_vel.pitch) - fixedpt_2float(pid_vel.roll) - fixedpt_2float(pid_vel.yaw);
-				motor_1 = tm.throttle + fixedpt_2float(pid_vel.pitch) - fixedpt_2float(pid_vel.roll) + fixedpt_2float(pid_vel.yaw);
-				motor_2 = tm.throttle + fixedpt_2float(pid_vel.pitch) + fixedpt_2float(pid_vel.roll) - fixedpt_2float(pid_vel.yaw);
-				motor_3 = tm.throttle + fixedpt_2float(pid_vel.roll) - fixedpt_2float(pid_vel.pitch) + fixedpt_2float(pid_vel.yaw);
+				motor_0 = tm.throttle - fixedpt_2float(pid_vel.pitch - pid_vel.roll - pid_vel.yaw);
+				motor_1 = tm.throttle + fixedpt_2float(pid_vel.pitch - pid_vel.roll + pid_vel.yaw);
+				motor_2 = tm.throttle + fixedpt_2float(pid_vel.pitch + pid_vel.roll - pid_vel.yaw);
+				motor_3 = tm.throttle + fixedpt_2float(pid_vel.roll - pid_vel.pitch + pid_vel.yaw);
 
 				if (motor_0 < BASE_THROTTLE)
 					motor_0 = BASE_THROTTLE;

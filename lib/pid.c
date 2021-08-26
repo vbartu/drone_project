@@ -23,7 +23,7 @@ void pid_create(pid_instance_t* pid, fixedpt kp, fixedpt ki, fixedpt kd, fixedpt
 	pid->last_time = micros() ;
 }
 
-double pid_fire(pid_instance_t pid, fixedpt input, fixedpt feedback)
+fixedpt pid_fire(pid_instance_t pid, fixedpt input, fixedpt feedback)
 {
 	uint64_t current_time = micros();
 	fixedpt elapsed_time = fixedpt_rconst((current_time - pid.last_time) / 1000000.0);
