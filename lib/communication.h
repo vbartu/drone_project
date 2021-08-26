@@ -21,7 +21,18 @@ enum comm_op_rsp_t {
 	COMM_OP_RSP_LOG_MOTOR,
 };
 
+enum comm_pid_id_t {
+	COMM_PID_PITCH = 0x01,
+	COMM_PID_ROLL,
+	COMM_PID_YAW,
+	COMM_PID_PITCH_VEL,
+	COMM_PID_ROLL_VEL,
+	COMM_PID_YAW_VEL,
+};
+
 typedef struct comm_pid_values_t {
+	uint8_t opcode;
+	uint8_t pid_id;
 	uint32_t kp;
 	uint32_t ki;
 	uint32_t kd;

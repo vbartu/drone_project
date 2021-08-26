@@ -21,13 +21,6 @@ typedef struct pid_out_t {
 } pid_out_t;
 
 /** Static variables -------------------------------------------------------- */
-static pid_instance_t pitch_pid;
-static pid_instance_t roll_pid;
-static pid_instance_t yaw_pid;
-
-static pid_instance_t pitch_vel_pid;
-static pid_instance_t roll_vel_pid;
-static pid_instance_t yaw_vel_pid;
 static volatile bool controller_flag;
 
 static pid_out_t pid_angle;
@@ -58,6 +51,7 @@ void* thread_2_main(void* args)
 
 	while (!angles_is_init());
 
+	pthread_mutex_lock(&pid_mtx);
 	pid_create(&pitch_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
 	pid_create(&roll_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
 	//pid_create(&yaw_pid, 0, 0.0, 0.0, 0.0, 0.0);
@@ -65,21 +59,23 @@ void* thread_2_main(void* args)
 	pid_create(&pitch_vel_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
 	pid_create(&roll_vel_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
 	pid_create(&yaw_vel_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
+	pthread_mutex_unlock(&pid_mtx);
 
 	while (true) {
 		if (controller_flag) {
 			controller_flag = false;
-			double motor_0=0, motor_1 = 0, motor_2 = 0, motor_3 = 0;
+			double motor_0 = 0, motor_1 = 0, motor_2 = 0, motor_3 = 0;
 			angles_t angles_vel = get_angle_vel();
 			angles_t angles = get_angles();
 
+			pthread_mutex_lock(&pid_mtx);
 			pid_angle.pitch = pid_fire(pitch_pid, 0, angles.pitch);
 			pid_angle.roll = pid_fire(roll_pid, 0, angles.roll);
 			//pid_angle.yaw = pid_fire(yaw_pid, 0, angles.yaw);
-
 			pid_vel.pitch = pid_fire(pitch_vel_pid, pid_angle.pitch, angles_vel.pitch);
 			pid_vel.roll = pid_fire(roll_vel_pid, pid_angle.roll, angles_vel.roll);
 			pid_vel.yaw = pid_fire(yaw_vel_pid, 0, angles_vel.yaw);
+			pthread_mutex_unlock(&pid_mtx);
 
 			transmitter_read();
 			transmitter tm = get_transmitter_values();
@@ -115,52 +111,11 @@ void* thread_2_main(void* args)
 			motor_run(3, (int) motor_3);
 
 			//pthread_mutex_lock(&print_mtx);
-			//printf("Motor: %.3f, %.3f, %.3f, %.3f\n", motor_0, motor_1, motor_2,
-					//motor_3);
+			//printf("Motor: %.3f, %.3f, %.3f, %.3f\n", motor_0, motor_1, motor_2, motor_3);
 			//pthread_mutex_unlock(&print_mtx);
-			//
-			//
-			//printf("Kp: %.2f Ki: %.2f Kd: %.2f\n", pitch_pid.kp, pitch_pid.ki, pitch_pid.kd);
 
-		//	printf("yaw_a: %.2f yaw_pid: %.2f yaw_v: %.2f yaw_pidv: %.2f m1: %.2f m2: %.2f\n", angles.yaw, pid_angle.yaw, angles_vel.yaw, pid_vel.yaw, motor_0, motor_1);
-			printf("pitch_a: %.2f pitch_pid: %.2f pitch_v: %.2f pitch_pidv: %.2f m1: %.2f m2: %d\n", angles.pitch, pid_angle.pitch, angles_vel.pitch, pid_vel.pitch, pitch_vel_pid.kp, tm.throttle);
+			//printf("pitch_a: %.2f pitch_pid: %.2f pitch_v: %.2f pitch_pidv: %.2f m1: %.2f m2: %d\n", angles.pitch, pid_angle.pitch, angles_vel.pitch, pid_vel.pitch, pitch_vel_pid.kp, tm.throttle);
 
-
-			if (tm.pitch > 1900) p_up_flag = true;
-			else if (tm.pitch < 1100) p_down_flag = true;
-			else if (tm.pitch > 1300 && tm.pitch < 1700) {
-				if (p_up_flag) {
-					pitch_vel_pid.kp += CHANGE;
-					roll_vel_pid.kp += CHANGE;
-					//roll_pid.kd += CHANGE;
-					//yaw_vel_pid.kp += 0.5;
-					p_up_flag = false;
-				} else if (p_down_flag) {
-					pitch_vel_pid.kp -= CHANGE;
-					roll_vel_pid.kp -= CHANGE;
-					//yaw_vel_pid.kp -= 0.5;
-					p_down_flag = false;
-				}
-			}
-
-			if (tm.roll > 1900) d_up_flag = true;
-			else if (tm.roll < 1100) d_down_flag = true;
-			else if (tm.roll > 1300 && tm.roll < 1700) {
-				if (d_up_flag) {
-					pitch_pid.kp += CHANGE;
-					roll_pid.kp += CHANGE;
-					//yaw_vel_pid.kd += 0.5;
-					d_up_flag = false;
-				} else if (d_down_flag) {
-					pitch_pid.kp -= CHANGE;
-					roll_pid.kp -= CHANGE;
-					// yaw_vel_pid.kd -= 0.5;
-					d_down_flag = false;
-				}
-				
-			}
 		}
-
-
 	}
 }
