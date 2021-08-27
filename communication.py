@@ -1,13 +1,16 @@
 import sys
+import queue
 import serial
 import struct
 import argparse
+import threading
 
 from cmd2 import Cmd, with_argparser
 
 class CommOpcode:
     GET_PID = 1
     SET_PID = 2
+    ANGLES = 3
 
 class PidId:
     PITCH = 1
@@ -22,11 +25,23 @@ class App(Cmd):
     prompt = ">>> "
     def __init__(self, port: str):
         self.s = serial.Serial(port, 115200)
+        self.read_queue = queue.Queue()
+        threading.Thread(target=self.read_msg, daemon=True).start()
         super().__init__()
 
+    def read_msg(self):
+        while True:
+            msg_len = int.from_bytes(self.s.read(1), "little")
+            msg = self.s.read(msg_len)
+            if msg[0] == CommOpcode.ANGLES:
+                op, x, y, z = struct.unpack(">Biii", msg)
+                with open("/tmp/drone_data.log", "a") as f:
+                    f.write(f"x: {x/100}, y:{y/100}, z: {z/100}\n")
+            else:
+                self.read_queue.put(msg)
+
     def recv_msg(self):
-        msg_len = int.from_bytes(self.s.read(1), "little")
-        msg = self.s.read(msg_len)
+        return self.read_queue.get()
 
     def send_msg(self, msg: bytes):
         self.s.write(struct.pack(">B", len(msg)) + msg)

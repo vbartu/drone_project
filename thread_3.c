@@ -83,7 +83,7 @@ void* thread_3_main(void* args)
 			data_flag = false;
 			angles_t a = get_angles();
 			comm_data_t data;
-			data.opcode = 0x03;
+			data.opcode = COMM_OP_RSP_ANGLE_VALUES;
 			data.x = a.pitch*100;
 			data.y = a.roll*100;
 			data.z = a.yaw*100;
