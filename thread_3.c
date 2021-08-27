@@ -1,9 +1,14 @@
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "main.h"
+#include "lib/angles.h"
 #include "lib/uart.h"
 #include "lib/timer.h"
 #include "lib/communication.h"
+
+
+static volatile bool data_flag;
 
 static void rx_callback(uint8_t msg_len, uint8_t* msg);
 
@@ -56,6 +61,11 @@ static void rx_callback(uint8_t msg_len, uint8_t* msg) {
 	}
 }
 
+static void data_flag_cb(void)
+{
+	data_flag = true;
+}
+
 
 void* thread_3_main(void* args)
 {
@@ -63,10 +73,21 @@ void* thread_3_main(void* args)
 	printf("Thread 3\n");
 	pthread_mutex_unlock(&print_mtx);
 	
+	timer_init();
+	app_timer_t* controller_timer = create_timer(data_flag_cb, 500, 100);
 	comm_init(rx_callback);
 
 	while (1) {
 		comm_process();
+		if (data_flag) {
+			data_flag = false;
+			angles_t a = get_angles();
+			comm_data_t data;
+			data.opcode = 0x03;
+			data.x = a.pitch*100;
+			data.y = a.roll*100;
+			data.z = a.yaw*100;
+			comm_send_msg(sizeof(data), (uint8_t*)&data);
+		}
 	}
-
 }

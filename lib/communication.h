@@ -38,6 +38,13 @@ typedef struct comm_pid_values_t {
 	uint32_t kd;
 } __attribute__((packed)) comm_pid_values_t;
 
+typedef struct comm_data_t {
+	uint8_t opcode;
+	int32_t x;
+	int32_t y;
+	int32_t z;
+} __attribute__((packed)) comm_data_t;
+
 
 typedef void (*comm_rx_cb_t)(uint8_t msg_len, uint8_t* msg);
 
