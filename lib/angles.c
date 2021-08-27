@@ -130,9 +130,9 @@ void angles_init(void)
 		delay(10);
 	}
 
-	gyro_err.x = fixedpt_div(gyro_x, fixedpt_div(fixedpt_rconst(32.8), fixedpt_rconst(SETUP_MEASUREMENTS)));
-	gyro_err.y = fixedpt_div(gyro_y, fixedpt_div(fixedpt_rconst(32.8), fixedpt_rconst(SETUP_MEASUREMENTS)));
-	gyro_err.z = fixedpt_div(gyro_z, fixedpt_div(fixedpt_rconst(32.8), fixedpt_rconst(SETUP_MEASUREMENTS)));
+	gyro_err.x = fixedpt_div(fixedpt_div(fixedpt_fromint(gyro_x), fixedpt_rconst(32.8)), fixedpt_rconst(SETUP_MEASUREMENTS));
+	gyro_err.y = fixedpt_div(fixedpt_div(fixedpt_fromint(gyro_y), fixedpt_rconst(32.8)), fixedpt_rconst(SETUP_MEASUREMENTS));
+	gyro_err.z = fixedpt_div(fixedpt_div(fixedpt_fromint(gyro_z), fixedpt_rconst(32.8)), fixedpt_rconst(SETUP_MEASUREMENTS));
 
 	double x = accel_x / (double) SETUP_MEASUREMENTS;
 	double y = accel_y / (double) SETUP_MEASUREMENTS;
@@ -154,6 +154,7 @@ void angles_init(void)
 }
 
 void calculate_angles(void) {
+
 	angles_axis_t gyro = calculate_angles_gyro();
 	angles_axis_t gyro_vel = calculate_angle_vel_gyro();
 	angles_axis_t accel = calculate_angles_accel();
@@ -164,13 +165,13 @@ void calculate_angles(void) {
 
 	pthread_mutex_lock(&position_mtx);
 
-	pitch_acc = fixedpt_mul(fixedpt_rconst(0.95), (position.pitch - gyro.y)) + fixedpt_mul(fixedpt_rconst(0.05), accel.x);
-	roll_acc = fixedpt_mul(fixedpt_rconst(0.95), (position.roll - gyro.x)) + fixedpt_mul(fixedpt_rconst(0.05), accel.y);
-	yaw_acc = fixedpt_mul(fixedpt_rconst(0.95), (position.yaw - gyro.z)) + fixedpt_mul(fixedpt_rconst(0.05), accel.z);
+	pitch_acc = fixedpt_mul(fixedpt_rconst(0.95), (position.pitch + gyro.y)) + fixedpt_mul(fixedpt_rconst(0.05), accel.x);
+	roll_acc = fixedpt_mul(fixedpt_rconst(0.95), (position.roll + gyro.x)) + fixedpt_mul(fixedpt_rconst(0.05), accel.y);
+	yaw_acc = fixedpt_mul(fixedpt_rconst(0.95), (position.yaw + gyro.z)) + fixedpt_mul(fixedpt_rconst(0.05), accel.z);
 
-	pitch_avg = pitch_avg + fixedpt_mul(alpha, (pitch_acc - pitch_avg) );
-	roll_avg = roll_avg + fixedpt_mul(alpha, (roll_acc - roll_avg) );
-	yaw_avg = yaw_avg + fixedpt_mul(alpha, (yaw_acc - yaw_avg) );
+	pitch_avg = pitch_avg + fixedpt_mul(alpha, (pitch_acc - pitch_avg));
+	roll_avg = roll_avg + fixedpt_mul(alpha, (roll_acc - roll_avg));
+	yaw_avg = yaw_avg + fixedpt_mul(alpha, (yaw_acc - yaw_avg));
 
 	gyro_x_avg = gyro_x_avg + fixedpt_mul(alpha, fixedpt_sub(gyro_vel.x, gyro_x_avg));
 	gyro_y_avg = gyro_y_avg + fixedpt_mul(alpha, fixedpt_sub(gyro_vel.y, gyro_y_avg));
@@ -179,13 +180,13 @@ void calculate_angles(void) {
 	position.pitch = pitch_avg;
 	position.roll = roll_avg;
 	position.yaw = yaw_avg;
-	
+
 	angle_vel.pitch = gyro_y_avg;
 	angle_vel.roll = gyro_x_avg;
 	angle_vel.yaw = gyro_z_avg;
 
-	if (fixedpt_2float( position.yaw) > 90)  position.yaw = fixedpt_rconst(90);		//We should set limits to it
-	if (fixedpt_2float( position.yaw) < -90) position.yaw = fixedpt_rconst (-90);
+	if (fixedpt_2float(position.yaw) > 90)  position.yaw = fixedpt_rconst(90);		//We should set limits to it
+	if (fixedpt_2float(position.yaw) < -90) position.yaw = fixedpt_rconst(-90);
 	pthread_mutex_unlock(&position_mtx);
 }
 
