@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <pthread.h>
+#include <machine/rtc.h>
 
 #include "main.h"
 
@@ -15,9 +16,10 @@ pid_instance_t roll_vel_pid;
 pid_instance_t yaw_vel_pid;
 
 
-static void* mock_thread(void* args)
+/** Public functions -------------------------------------------------------- */
+uint64_t micros(void)
 {
-	while (1);
+	return (uint64_t) get_cpu_usecs();
 }
 
 /** Main function ----------------------------------------------------------- */

@@ -3,15 +3,14 @@
 
 #include "main.h"
 #include "lib/angles.h"
-#include "lib/timer.h"
 #include "lib/pid.h"
 #include "lib/transmitter.h"
 #include "lib/motor.h"
 
 #define CHANGE 0.1
-//#define BASE_THROTTLE 1770
 #define BASE_THROTTLE 1750
 #define THROTTLE_SCALE 10
+#define LOOP_PERIOD 50000 // us
 
 /** Data structures --------------------------------------------------------- */
 typedef struct pid_out_t {
@@ -21,22 +20,8 @@ typedef struct pid_out_t {
 } pid_out_t;
 
 /** Static variables -------------------------------------------------------- */
-static volatile bool controller_flag;
-
 static pid_out_t pid_angle;
 static pid_out_t pid_vel;
-
-static volatile bool p_up_flag, p_down_flag;
-static volatile bool d_up_flag, d_down_flag;
-
-/** Function prototypes ----------------------------------------------------- */
-static void controller_flag_cb(void);
-
-/** Function definitions ---------------------------------------------------- */
-static void controller_flag_cb(void)
-{
-	controller_flag = true;
-}
 
 /** Public functions -------------------------------------------------------- */
 void* thread_2_main(void* args)
@@ -45,25 +30,20 @@ void* thread_2_main(void* args)
 	printf("Thread 2\n");
 	pthread_mutex_unlock(&print_mtx);
 
-	timer_init();
-
-	app_timer_t* controller_timer = create_timer(controller_flag_cb, 500, 50);
-
 	while (!angles_is_init());
 
 	pthread_mutex_lock(&pid_mtx);
 	pid_create(&pitch_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
 	pid_create(&roll_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
 	//pid_create(&yaw_pid, 0, 0.0, 0.0, 0.0, 0.0);
-
 	pid_create(&pitch_vel_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
 	pid_create(&roll_vel_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
 	pid_create(&yaw_vel_pid, 0.4, 0.0, 0.2, 0.0, 0.0);
 	pthread_mutex_unlock(&pid_mtx);
 
+	uint64_t next_time = micros();
 	while (true) {
-		if (controller_flag) {
-			controller_flag = false;
+		if (next_time < micros()) {
 			double motor_0 = 0, motor_1 = 0, motor_2 = 0, motor_3 = 0;
 			angles_t angles_vel = get_angle_vel();
 			angles_t angles = get_angles();
@@ -116,6 +96,7 @@ void* thread_2_main(void* args)
 
 			//printf("pitch_a: %.2f pitch_pid: %.2f pitch_v: %.2f pitch_pidv: %.2f m1: %.2f m2: %d\n", angles.pitch, pid_angle.pitch, angles_vel.pitch, pid_vel.pitch, pitch_vel_pid.kp, tm.throttle);
 
+			next_time += LOOP_PERIOD;
 		}
 	}
 }

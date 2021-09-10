@@ -8,11 +8,12 @@
 #include "lib/communication.h"
 
 
-static volatile bool data_flag;
+#define LOOP_PERIOD 100000 // us
 
+/** Function prototypes ----------------------------------------------------- */
 static void rx_callback(uint8_t msg_len, uint8_t* msg);
 
-
+/** Function definitions ---------------------------------------------------- */
 static void rx_callback(uint8_t msg_len, uint8_t* msg) {
 	switch (msg[0]) { // opcode
 	case COMM_OP_GET_PID_VALUES:
@@ -61,26 +62,20 @@ static void rx_callback(uint8_t msg_len, uint8_t* msg) {
 	}
 }
 
-static void data_flag_cb(void)
-{
-	data_flag = true;
-}
-
-
+/** Public functions -------------------------------------------------------- */
 void* thread_3_main(void* args)
 {
 	pthread_mutex_lock(&print_mtx);
 	printf("Thread 3\n");
 	pthread_mutex_unlock(&print_mtx);
 	
-	timer_init();
-	app_timer_t* controller_timer = create_timer(data_flag_cb, 500, 100);
 	comm_init(rx_callback);
 
-	while (1) {
+	uint64_t next_time = micros();
+	while (true) {
 		comm_process();
-		if (data_flag) {
-			data_flag = false;
+
+		if (next_time < micros()) {
 			angles_t a = get_angles();
 			comm_data_t data;
 			data.opcode = COMM_OP_RSP_ANGLE_VALUES;
@@ -88,6 +83,7 @@ void* thread_3_main(void* args)
 			data.y = a.roll*100;
 			data.z = a.yaw*100;
 			comm_send_msg(sizeof(data), (uint8_t*)&data);
+			next_time += LOOP_PERIOD;
 		}
 	}
 }

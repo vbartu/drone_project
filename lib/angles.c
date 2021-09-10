@@ -5,7 +5,6 @@
 
 #include "angles.h"
 #include "main.h"
-#include "lib/timer.h"
 #include "util.h"
 
 #define SETUP_MEASUREMENTS 500
@@ -96,8 +95,8 @@ void angles_init(void)
 	printf("Calibrating MPU\n");
 	pthread_mutex_unlock(&print_mtx);
 
-	mpu6050_init();
-	delay(202);
+	uint64_t now = micros();
+	while (now + 100000 > micros()); // Delay 100 ms
 
 	int32_t gyro_x = 0;
 	int32_t gyro_y = 0;
@@ -117,7 +116,8 @@ void angles_init(void)
 		accel_y += accel_data.y;
 		accel_z += accel_data.z;
 
-		delay(10);
+		uint64_t now = micros();
+		while (now + 10000 > micros()); // Delay 10 ms
 	}
 
 	gyro_err.x = gyro_x / 32.8 / (double) SETUP_MEASUREMENTS;

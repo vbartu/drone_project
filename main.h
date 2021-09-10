@@ -19,6 +19,9 @@ extern pid_instance_t roll_vel_pid;
 extern pid_instance_t yaw_vel_pid;
 
 
+/** Common functions -------------------------------------------------------- */
+uint64_t micros(void);
+
 /** Thread main functions --------------------------------------------------- */
 void* thread_0_main(void* args);
 void* thread_1_main(void* args);
